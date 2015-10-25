@@ -1,6 +1,23 @@
 """ The EventHandler, Event objects.
 
 EventHandler manages queueing Events and processing them in sequential order.
+
+The Event object represents any form of an Event that occurs non-instantaneously.
+
+Examples include:
+-packet transmission
+-packet generation
+-updating routing tables
+-generating flow
+
+All Events have two main components: a timestamp and an eventObject.
+
+timestamp: The time that this Event occurs (an integer).
+eventObject: the object that will receive this Event occurs on.
+
+When the timestamp is reached, the EventHandler will dequeue the Event and call
+eventObject.processEvent(). It is up to the eventObject to handle the Event.
+processEvent() should also return a list of new Events to enqueue.
 """
 
 from Queue import PriorityQueue
@@ -16,16 +33,21 @@ class EventHandler:
         for e in initialEvents:
             self._queue.put(e)
 
-    def _processEvent(self):
+    def step(self):
         """ Processes one Event from the queue, corresponding to one 'tick'.
 
         If the queue is empty, this will raise an Empty error.
         :return: The Event that was just processed.
         """
 
-        # When we get an object from the queue, do not block if empty. This may be changed later.
+        # When we get an object from the queue, do not block if empty.
+        # Simply raise an Empty exception. This may be changed later.
         event = self._queue.get(block=False)
-        event.doEvent()
+
+        newevents = event.eventObject.processEvent(event)
+        for e in newevents:
+            self._queue.put(e)
+
         return event
 
     def run(self, interval, steps):
@@ -38,10 +60,10 @@ class EventHandler:
         # If interval is 0 we branch and do not sleep because Python is interpreted and sucks shit at optimizing.
         if interval == 0:
             for i in xrange(steps):
-                self._processEvent()
+                self.step()
         else:
             for i in xrange(steps):
-                self._processEvent()
+                self.step()
                 time.sleep(interval / 1000.0)
 
 
@@ -64,14 +86,6 @@ class Event(object):
         """
         return self.timestamp > other.timestamp
 
-    def doEvent(self):
-        """ Carries out the event.
-        
-        :return: new Events spawned by this Event.
-        """
-        # TODO(tongcharlie) Process Event here
-        pass
-
 
 class PacketEvent(Event):
     def __init__(self, timestamp, sender, receiver, packet, logMessage=None):
@@ -86,11 +100,3 @@ class PacketEvent(Event):
         super(self.__class__, self).__init__(timestamp, receiver, logMessage)
         self.sender = sender
         self.packet = packet
-
-    def doEvent(self):
-        """ Carries out the event.
-
-        :return: new Events spawned by this Event.
-        """
-        # TODO(tongcharlie) Process Event here
-        pass

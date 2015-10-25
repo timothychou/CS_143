@@ -3,9 +3,40 @@
 from eventhandler import EventHandler
 from eventhandler import Event
 from eventhandler import PacketEvent
+from networkobject import NetworkObject
 from Queue import Empty
 
 import unittest
+
+
+class NetworkObjectStub(NetworkObject):
+    """ A stub used for testing Event processing.
+
+    Implements processEvent() but does nothing.
+    """
+    def __init__(self):
+        pass
+
+    def processEvent(self, event):
+        return []
+
+
+class NetworkObjectStubWithNewEvents(NetworkObject):
+    """ A stub used for testing Event processing.
+
+    Implements processEvent() and generates new Events to enqueue.
+
+    The timestamps will start at 102 (100 + 2) and go up by 1 each time.
+    """
+    def __init__(self):
+        self._index = 100
+        pass
+
+    def processEvent(self, event):
+        self._index = self._index + 2
+        return [Event(self._index, NetworkObjectStub(), 'msg1'),
+                Event(self._index + 1, NetworkObjectStub(), 'msg2')]
+
 
 class EventHandlerTest(unittest.TestCase):
     def testEventHandlerInit(self):
@@ -13,40 +44,77 @@ class EventHandlerTest(unittest.TestCase):
 
         Checks the priority queue enqueues Events in the correct order.
         """
-        e1 = Event(5, 'obj', 'message')
-        e2 = Event(0, 'obj', 'message')
-        e3 = Event(7, 'obj', 'message')
-        e4 = PacketEvent(1, 'sender2', 'receiver3', 4, 'message5')
+        stub = NetworkObjectStub()
+
+        e1 = Event(5, stub, 'message')
+        e2 = Event(0, stub, 'message')
+        e3 = Event(7, stub, 'message')
+        e4 = PacketEvent(1, 'sender2', stub, 4, 'message5')
         eventList = [e1, e2, e3, e4]
 
         eventHandler = EventHandler('network', eventList)
         self.assertEqual('network', eventHandler._network)
         self.assertEqual(4, eventHandler._queue.qsize())
 
-    def testProcessEventOrder(self):
-        """ Test that _processEvent returns the event with smallest timestamp.
+    def testStepOrder(self):
+        """ Test that step grabs the event with smallest timestamp.
         """
-        e1 = Event(5, 'obj', 'message')
-        e2 = Event(0, 'obj', 'message')
-        e3 = Event(7, 'obj', 'message')
-        e4 = PacketEvent(1, 'sender2', 'receiver3', 4, 'message5')
+        stub = NetworkObjectStub()
+
+        e1 = Event(5, stub, 'message')
+        e2 = Event(0, stub, 'message')
+        e3 = Event(7, stub, 'message')
+        e4 = PacketEvent(1, 'sender2', stub, 4, 'message5')
         eventList = [e1, e2, e3, e4]
 
         eventHandler = EventHandler('network', eventList)
-        self.assertEqual(e2, eventHandler._processEvent())
-        self.assertEqual(e4, eventHandler._processEvent())
-        self.assertEqual(e1, eventHandler._processEvent())
-        self.assertEqual(e3, eventHandler._processEvent())
+
+        # Test that there are 4 Events enqueued and in the correct order
+        self.assertEqual(4, eventHandler._queue.qsize())
+        self.assertEqual(e2, eventHandler.step())
+        self.assertEqual(e4, eventHandler.step())
+        self.assertEqual(e1, eventHandler.step())
+        self.assertEqual(e3, eventHandler.step())
+
+        # Test that stepping into an empty queue raises Empty
         with self.assertRaises(Empty) as e:
-            eventHandler._processEvent()
+            eventHandler.step()
+
+    def testStepNewEvents(self):
+        """ Test that step correctly enqueues new events.
+        """
+        stub = NetworkObjectStubWithNewEvents()
+
+        e1 = Event(5, stub, 'message')
+        e2 = Event(0, stub, 'message')
+        e3 = Event(7, stub, 'message')
+        e4 = PacketEvent(1, 'sender2', stub, 4, 'message5')
+        eventList = [e1, e2, e3, e4]
+
+        eventHandler = EventHandler('network', eventList)
+        self.assertEqual(e2, eventHandler.step())
+        self.assertEqual(e4, eventHandler.step())
+        self.assertEqual(e1, eventHandler.step())
+        self.assertEqual(e3, eventHandler.step())
+
+        # Test that there are 8 more Events enqueued and in the correct order
+        self.assertEqual(8, eventHandler._queue.qsize())
+        for i in xrange(102, 110):
+            self.assertEqual(i, eventHandler.step().timestamp)
+
+        # Test that stepping into an empty queue raises Empty
+        with self.assertRaises(Empty) as e:
+            eventHandler.step()
 
     def testRun(self):
         """ Test that run() handles interval and steps correctly.
         """
-        e1 = Event(5, 'obj', 'message')
-        e2 = Event(0, 'obj', 'message')
-        e3 = Event(7, 'obj', 'message')
-        e4 = PacketEvent(1, 'sender2', 'receiver3', 4, 'message5')
+        stub = NetworkObjectStub()
+
+        e1 = Event(5, stub, 'message')
+        e2 = Event(0, stub, 'message')
+        e3 = Event(7, stub, 'message')
+        e4 = PacketEvent(1, 'sender2', stub, 4, 'message5')
         eventList = [e1, e2, e3, e4]
 
         eventHandler = EventHandler('network', eventList)

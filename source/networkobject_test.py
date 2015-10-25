@@ -4,6 +4,7 @@ from networkobject import NetworkObject
 from networkobject import Link
 from networkobject import Host
 from eventhandler import Event
+from eventhandler import PacketEvent
 import unittest
 
 
@@ -21,6 +22,8 @@ class LinkTest(unittest.TestCase):
             l = Link('nodeA', 'nodeB', 5, 5)
             e = Event(5, 'obj', 'message')
             l.processEvent(e)
+        e2 = PacketEvent(1, 'sender2', 'receiver3', 4, 'message5')
+        l.processEvent(e2)      # Should not fail
 
     def testOtherNode(self):
         """ Tests _otherNode. """
