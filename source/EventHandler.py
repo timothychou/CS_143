@@ -1,5 +1,11 @@
+""" The EventHandler, Event objects.
+
+EventHandler manages queueing Events and processing them in sequential order.
+"""
+
 from Queue import PriorityQueue
 import time
+
 
 class EventHandler:
     def __init__(self, network, initialEvents):
@@ -47,16 +53,16 @@ class Event(object):
         :param eventObject: object that the Event occurs on.
         :param logMessage: [optional] string describing the event for logging purposes.
         """
-        self._timestamp = timestamp
-        self._eventObject = eventObject
-        self._logMessage = logMessage
+        self.timestamp = timestamp
+        self.eventObject = eventObject
+        self.logMessage = logMessage
 
     def __cmp__(self, other):
         """ Overloaded comparison operator using timestamp for the Priority Queue.
 
         e1 > e2 = True if e1 has a timestamp greater than e2
         """
-        return self._timestamp > other._timestamp
+        return self.timestamp > other.timestamp
 
     def doEvent(self):
         """ Carries out the event.
@@ -78,8 +84,8 @@ class PacketEvent(Event):
         :param logMessage: [optional] string describing the event for logging purposes.
         """
         super(self.__class__, self).__init__(timestamp, receiver, logMessage)
-        self._sender = sender
-        self._packet = packet
+        self.sender = sender
+        self.packet = packet
 
     def doEvent(self):
         """ Carries out the event.

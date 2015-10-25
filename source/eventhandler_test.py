@@ -1,10 +1,13 @@
-from EventHandler import EventHandler
-from EventHandler import Event
-from EventHandler import PacketEvent
-from unittest import TestCase
+""" Unittests for EventHandler. """
+
+from eventhandler import EventHandler
+from eventhandler import Event
+from eventhandler import PacketEvent
 from Queue import Empty
 
-class EventHandlerTest(TestCase):
+import unittest
+
+class EventHandlerTest(unittest.TestCase):
     def testEventHandlerInit(self):
         """ Test the constructor of EventHandler.
 
@@ -52,14 +55,14 @@ class EventHandlerTest(TestCase):
             eventHandler.run(0, 1)
 
 
-class EventTest(TestCase):
+class EventTest(unittest.TestCase):
     def testEventInit(self):
         """ Test the constructor of Event.
         """
         e1 = Event(5, 'obj', 'message')
-        self.assertEqual(e1._timestamp, 5)
-        self.assertEqual(e1._eventObject, 'obj')
-        self.assertEqual(e1._logMessage, 'message')
+        self.assertEqual(e1.timestamp, 5)
+        self.assertEqual(e1.eventObject, 'obj')
+        self.assertEqual(e1.logMessage, 'message')
 
     def testEventCmp(self):
         """ Test the comparator for Events.
@@ -75,8 +78,11 @@ class EventTest(TestCase):
         """ Test the constructor of PacketEvent.
         """
         e1 = PacketEvent(1, 'sender2', 'receiver3', 4, 'message5')
-        self.assertEqual(e1._timestamp, 1)
-        self.assertEqual(e1._eventObject, 'receiver3')
-        self.assertEqual(e1._sender, 'sender2')
-        self.assertEqual(e1._packet, 4)
-        self.assertEqual(e1._logMessage, 'message5')
+        self.assertEqual(e1.timestamp, 1)
+        self.assertEqual(e1.eventObject, 'receiver3')
+        self.assertEqual(e1.sender, 'sender2')
+        self.assertEqual(e1.packet, 4)
+        self.assertEqual(e1.logMessage, 'message5')
+
+if __name__ == '__main__':
+    unittest.main()

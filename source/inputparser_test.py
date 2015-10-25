@@ -4,7 +4,7 @@ import unittest
 from inputparser import NetworkGraph, InputParser
 
 
-class TestInputParser(unittest.TestCase):
+class InputParserTest(unittest.TestCase):
     def test_import(self):
         # Generate data file
         filename = 'testfile.json'
@@ -22,6 +22,7 @@ class TestInputParser(unittest.TestCase):
         ip = InputParser()
         ip.load(filename)
         ip.draw()
+
 
 if __name__ == '__main__':
     unittest.main()
