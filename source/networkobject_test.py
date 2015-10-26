@@ -12,17 +12,18 @@ class NetworkObjectTest(unittest.TestCase):
     def testAbstractClass(self):
         """ Tests that NetworkObject is abstract and cannot be instantiated. """
         with self.assertRaises(NotImplementedError):
-            no = NetworkObject()
+            NetworkObject()
 
 
 class LinkTest(unittest.TestCase):
     def testProcessWithNonPacketEvent(self):
         """ Tests that processEvent will fail when not passed a PacketEvent. """
-        with self.assertRaises(AssertionError):
-            l = Link('nodeA', 'nodeB', 5, 5)
-            e = Event(5, 'obj', 'message')
-            l.processEvent(e)
+        l = Link('nodeA', 'nodeB', 5, 5)
+        e = Event(5, 'obj', 'message')
         e2 = PacketEvent(1, 'sender2', 'receiver3', 4, 'message5')
+
+        with self.assertRaises(AssertionError):
+            l.processEvent(e)
         l.processEvent(e2)      # Should not fail
 
     def testOtherNode(self):

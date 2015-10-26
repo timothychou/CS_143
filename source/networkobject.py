@@ -1,11 +1,13 @@
-from source.eventhandler import PacketEvent
-from source.eventhandler import Event
+from eventhandler import PacketEvent
+from eventhandler import Event
 from packet import Packet
 
 
 class NetworkObject(object):
     """abstract class for all network objects"""
 
+    def __init__(self):
+        raise NotImplementedError('NetworkObject should never be instantiated.')
 
     def processEvent(self, event):
         """ Processes one event, depending on what the event is.
@@ -17,7 +19,7 @@ class NetworkObject(object):
         """
         if isinstance(event, PacketEvent):
             return self._processPacketEvent(event)
-        elif isintance(event, Event):
+        elif isinstance(event, Event):
             return self._processOtherEvent(event)
         else:
             raise AssertionError('process event should only be given an event')
@@ -97,7 +99,7 @@ class Host(Node):
 
         sends back an ack as needed"""
         packet = event.packet
-        assert packet.dest = self.address
+        assert packet.dest == self.address
         if not packet.ack and not packet.corrupted:
             newPacket = Packet(packet.dest, packet.source, ack=True)
             return [PacketEvent(event.timestamp, self,
