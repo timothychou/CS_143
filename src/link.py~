@@ -1,0 +1,35 @@
+class Link(Network_object):
+    '''Represents link in a network
+
+    This class represents a link in a network that packets can travel
+    across'''
+
+    def __init__(self, nodeA, nodeB, latency):
+        self.nodeA = nodeA
+        self.nodeB = nodeB
+        self.latency = latency
+        
+    def processEvent(self, events):
+        ''' Processes events'''
+        newEvents = []
+        for event in events:
+            if isInstance(event, PacketEvent):
+                newEvents.append(self.processPacketEvent(event))
+        return newEvents
+
+    def processPacketEvent(self, packet_event):
+        '''Processes packet events'''
+        newEvent = new PacketEvent(timestamp + self.latency,
+                                   self, self.otherNode(packet_event.sender),
+                                   packet_event.packet,
+                                   packet_event.logMessage)
+        return newEvent
+
+    def otherNode(self, node):
+        '''returns the other node the link is connected to'''
+        if node == self.nodeA:
+            return self.nodeB
+        else:
+            return self.nodeA
+
+                             

@@ -1,0 +1,19 @@
+class Router(Network_object):
+    ''' Represents router in a network
+
+    This class represents a router in a network that is able to 
+    route packets'''
+
+
+    def __init__(self, links, id):
+        self.links = links
+        self.id = id
+        self.routing_table = dict()
+
+    def processEvent(self, events):
+        ''' Processes events
+
+        Input: list of events from the event processor
+        Output: list of new events to enqueue in event processor'''
+        
+        return events
