@@ -1,5 +1,0 @@
-print 'Running network object test'
-execfile('networkobject_test.py')
-
-print 'Running event handler test'
-execfile('eventhandler_test.py')
