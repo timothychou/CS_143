@@ -25,6 +25,7 @@ import time
 
 
 class EventHandler:
+
     def __init__(self, network, initialEvents):
         """ Constructor for an EventHandler. """
         self._network = network
@@ -57,7 +58,8 @@ class EventHandler:
         :return:
         """
 
-        # If interval is 0 we branch and do not sleep because Python is interpreted and sucks shit at optimizing.
+        # If interval is 0 we branch and do not sleep because Python is
+        # interpreted and sucks shit at optimizing.
         if interval == 0:
             for i in xrange(steps):
                 self.step()
@@ -68,6 +70,7 @@ class EventHandler:
 
 
 class Event(object):
+
     def __init__(self, timestamp, eventObject, logMessage=None):
         """ Constructor for an Event.
 
@@ -88,6 +91,7 @@ class Event(object):
 
 
 class PacketEvent(Event):
+
     def __init__(self, timestamp, sender, receiver, packet, logMessage=None):
         """ Constructor for a PacketEvent.
 

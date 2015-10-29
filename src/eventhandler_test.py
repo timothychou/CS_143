@@ -10,10 +10,12 @@ import unittest
 
 
 class NetworkObjectStub(NetworkObject):
+
     """ A stub used for testing Event processing.
 
     Implements processEvent() but does nothing.
     """
+
     def __init__(self):
         pass
 
@@ -22,12 +24,14 @@ class NetworkObjectStub(NetworkObject):
 
 
 class NetworkObjectStubWithNewEvents(NetworkObject):
+
     """ A stub used for testing Event processing.
 
     Implements processEvent() and generates new Events to enqueue.
 
     The timestamps will start at 102 (100 + 2) and go up by 1 each time.
     """
+
     def __init__(self):
         self._index = 100
         pass
@@ -39,6 +43,7 @@ class NetworkObjectStubWithNewEvents(NetworkObject):
 
 
 class EventHandlerTest(unittest.TestCase):
+
     def testEventHandlerInit(self):
         """ Test the constructor of EventHandler.
 
@@ -124,6 +129,7 @@ class EventHandlerTest(unittest.TestCase):
 
 
 class EventTest(unittest.TestCase):
+
     def testEventInit(self):
         """ Test the constructor of Event.
         """

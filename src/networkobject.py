@@ -4,10 +4,12 @@ from packet import Packet
 
 
 class NetworkObject(object):
+
     """abstract class for all network objects"""
 
     def __init__(self):
-        raise NotImplementedError('NetworkObject should never be instantiated.')
+        raise NotImplementedError(
+            'NetworkObject should never be instantiated.')
 
     def processEvent(self, event):
         """ Processes one event, depending on what the event is.
@@ -24,14 +26,15 @@ class NetworkObject(object):
         else:
             raise AssertionError('process event should only be given an event')
 
-
     def _processPacketEvent(self, packet_event):
         raise NotImplementedError('This should be overriden by subclass')
 
     def _processOtherEvent(self, event):
         raise NotImplementedError('This should be overriden by subclass')
 
+
 class Link(NetworkObject):
+
     """Represents link in a network
 
     This class represents a link in a network that packets can travel
@@ -46,12 +49,13 @@ class Link(NetworkObject):
     def _processPacketEvent(self, packet_event):
         """Processes packet events
 
-        Creates a new PacketEvent of the host receiving the packet at some time in the future.
+        Creates a new PacketEvent of the host receiving the packet at some time
+        in the future.
         """
         return [PacketEvent(packet_event.timestamp + self.latency,
-                           self, self._otherNode(packet_event.sender),
-                           packet_event.packet,
-                           packet_event.logMessage)]
+                            self, self._otherNode(packet_event.sender),
+                            packet_event.packet,
+                            packet_event.logMessage)]
 
     def _processOtherEvent(self, event):
         """ Processes non-packet events
@@ -66,6 +70,7 @@ class Link(NetworkObject):
 
 
 class Node(NetworkObject):
+
     """ class that represents a node in a network
 
     This class represents a node in a network connected by edges"""
@@ -88,11 +93,9 @@ class Host(Node):
     This class represents a host in a network that is able to receive and
     send data"""
 
-
     def __init__(self, address, links):
         super(self.__class__, self).__init__(address, links)
         assert len(links) == 1
-
 
     def _processPacketEvent(self, event):
         """Processes packet event
@@ -120,11 +123,11 @@ class Host(Node):
 
 
 class Router(NetworkObject):
+
     """ Represents router in a network
 
     This class represents a router in a network that is able to
     route packets"""
-
 
     def __init__(self, address, links):
         super(self.__class__, self).__init__(address, links)
@@ -134,7 +137,6 @@ class Router(NetworkObject):
         # _UpdateRoutingTable should be called once. Otherwise, the Router
         # will not be able to forward anything at all.
 
-
     def _processPacketEvent(self, event):
         """Processes packet event.
 
@@ -142,13 +144,13 @@ class Router(NetworkObject):
         latency through the router.
         """
         return [PacketEvent(event.timestamp, self,
-                           self.getRoute(event.packet.destination),
-                           event.packet)]
+                            self.getRoute(event.packet.destination),
+                            event.packet)]
 
     def _UpdateRoutingTable(self):
         """ Updates the internal routing table.
 
-        This method should be the result of an Event that informs 
+        This method should be the result of an Event that informs
         the Router to update.
         """
         # TODO(choutim) Implement at a later time.
@@ -157,5 +159,3 @@ class Router(NetworkObject):
     def getRoute(self, destination):
         """checks routing table for route to destination"""
         return self.routing_table[destination]
-
-

@@ -9,6 +9,7 @@ import unittest
 
 
 class NetworkObjectTest(unittest.TestCase):
+
     def testAbstractClass(self):
         """ Tests that NetworkObject is abstract and cannot be instantiated. """
         with self.assertRaises(NotImplementedError):
@@ -16,6 +17,7 @@ class NetworkObjectTest(unittest.TestCase):
 
 
 class LinkTest(unittest.TestCase):
+
     def testProcessWithNonPacketEvent(self):
         """ Tests that processEvent will fail when not passed a PacketEvent. """
         l = Link('nodeA', 'nodeB', 5, 5)
@@ -34,6 +36,7 @@ class LinkTest(unittest.TestCase):
 
 
 class HostTest(unittest.TestCase):
+
     def testExactlyOneLink(self):
         """ Tests that Hosts can only have exactly 1 Link. """
         with self.assertRaises(AssertionError):
@@ -54,8 +57,10 @@ class HostTest(unittest.TestCase):
             self.assertEqual(l, e.eventObject)     # Event receiver is the link
             self.assertEqual(42, e.timestamp)      # Timestamp is 42
             p = e.packet
-            self.assertEqual(h.address, p.source)  # Host address is source of packet
-            self.assertEqual('destaddr', p.dest)   # Destination is address 'destaddr'
+            # Host address is source of packet
+            self.assertEqual(h.address, p.source)
+            # Destination is address 'destaddr'
+            self.assertEqual('destaddr', p.dest)
             # Unsure how to check packet index (may change)
 
 
