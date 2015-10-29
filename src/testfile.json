@@ -1,1 +1,0 @@
-{"directed": false, "graph": {"instructions": [{"host_id": 0, "time": 1, "target_id": 2, "size": 1000000}]}, "nodes": [{"host": 1, "id": 0}, {"host": 0, "id": 1}, {"host": 1, "id": 2}], "links": [{"source": 0, "rate": 4000, "target": 1}, {"source": 1, "rate": 700, "target": 2}], "multigraph": false}

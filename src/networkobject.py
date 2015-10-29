@@ -40,11 +40,11 @@ class Link(NetworkObject):
     This class represents a link in a network that packets can travel
     across"""
 
-    def __init__(self, nodeA, nodeB, latency, speed):
+    def __init__(self, nodeA, nodeB, latency, rate):
         self.nodeA = nodeA
         self.nodeB = nodeB
         self.latency = latency
-        self.speed = speed
+        self.rate = rate
 
     def _processPacketEvent(self, packet_event):
         """Processes packet events
@@ -85,6 +85,9 @@ class Node(NetworkObject):
         self.address = address
         self.links = links
 
+    def addLink(self, target):
+        self.links.append(target)
+
 
 class Host(Node):
 
@@ -95,7 +98,6 @@ class Host(Node):
 
     def __init__(self, address, links):
         super(self.__class__, self).__init__(address, links)
-        assert len(links) == 1
 
     def _processPacketEvent(self, event):
         """Processes packet event
@@ -121,8 +123,15 @@ class Host(Node):
             events.append(PacketEvent(timestamp, self, self.links[0], packet))
         return events
 
+    def addLink(self, link):
+        """ Overwrites default add link to check for single link """
+        if not self.links:
+            self.links.append(link)
+        else:
+            print "Node %d already has a link!" % self.address
 
-class Router(NetworkObject):
+
+class Router(Node):
 
     """ Represents router in a network
 
@@ -131,7 +140,6 @@ class Router(NetworkObject):
 
     def __init__(self, address, links):
         super(self.__class__, self).__init__(address, links)
-        assert len(links) > 0
         self.routing_table = dict()
         # The routing table should either have a default starting state, or
         # _UpdateRoutingTable should be called once. Otherwise, the Router

@@ -1,3 +1,7 @@
+from packet import Packet
+from eventhandler import *
+from networkobject import *
+from network import Network
 
 def main():
     """
@@ -7,7 +11,9 @@ def main():
     """
 
     # Input parser
-
+    N = Network()
+    N.load('testfile.json')
+    N.draw()
     # Event handler
 
     # Begin simulation
