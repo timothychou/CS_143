@@ -37,14 +37,6 @@ class LinkTest(unittest.TestCase):
 
 class HostTest(unittest.TestCase):
 
-    def testExactlyOneLink(self):
-        """ Tests that Hosts can only have exactly 1 Link. """
-        with self.assertRaises(AssertionError):
-            Host('addr', [])
-        with self.assertRaises(AssertionError):
-            Host('addr', ['link1', 'link2'])
-        Host('addr', ['link1'])      # Should not fail
-
     def testSendPackets(self):
         """ Tests sendPackets generates the correct set of new Events. """
         l = Link('nodeA', 'nodeB', 5, 5)

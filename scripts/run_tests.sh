@@ -1,8 +1,12 @@
 #!/bin/bash
 
 echo "running network object test"
-python networkobject_test.py
+python ../src/networkobject_test.py
 
 echo
 echo "running event handler test"
-python eventhandler_test.py
+python ../src/eventhandler_test.py
+
+echo
+echo "running network creation test"
+python ../src/network_test.py
