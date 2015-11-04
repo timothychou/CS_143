@@ -1,3 +1,4 @@
 src/*.pyc
 src/*.py~
 src/*.sh~
+.idea/*
