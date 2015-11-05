@@ -1,6 +1,7 @@
 """ Unittests for networkobject.py """
 import sys
-sys.path.append("C:\Users\Kevin\Documents\GitHub\CS_143")
+import os
+sys.path.append(os.path.dirname(os.getcwd()))
 
 from icfire.networkobject import NetworkObject, Link, Host
 from icfire.eventhandler import Event, PacketEvent

@@ -1,6 +1,7 @@
 """ Unittests for EventHandler. """
 import sys
-sys.path.append("C:\Users\Kevin\Documents\GitHub\CS_143")
+import os
+sys.path.append(os.path.dirname(os.getcwd()))
 
 from icfire.eventhandler import EventHandler, Event, PacketEvent
 from icfire.networkobject import NetworkObject

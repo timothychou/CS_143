@@ -1,5 +1,6 @@
 import sys
-sys.path.append("C:\Users\Kevin\Documents\GitHub\CS_143")
+import os
+sys.path.append(os.path.dirname(os.getcwd()))
 
 from icfire.network import Network
 from icfire.eventhandler import EventHandler

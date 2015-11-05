@@ -1,6 +1,7 @@
 ''' Unit tests for the network construction '''
 import sys
-sys.path.append("C:\Users\Kevin\Documents\GitHub\CS_143")
+import os
+sys.path.append(os.path.dirname(os.getcwd()))
 
 import unittest
 from icfire.network import *
