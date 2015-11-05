@@ -2,7 +2,8 @@
 
 EventHandler manages queueing Events and processing them in sequential order.
 
-The Event object represents any form of an Event that occurs non-instantaneously.
+The Event object represents any form of an Event that occurs
+non-instantaneously.
 
 Examples include:
 -packet transmission
@@ -26,13 +27,18 @@ import time
 
 class EventHandler:
 
-    def __init__(self, network, initialEvents):
+    def __init__(self, network, initialEvents=[]):
         """ Constructor for an EventHandler. """
         self._network = network
         self._queue = PriorityQueue()
-
-        for e in initialEvents:
-            self._queue.put(e)
+        if initialEvents:
+            for e in initialEvents:
+                self._queue.put(e)
+        elif network.events:
+            for e in network.events:
+                self._queue.put(e)
+        else:
+            print "No events queued"
 
     def step(self):
         """ Processes one Event from the queue, corresponding to one 'tick'.

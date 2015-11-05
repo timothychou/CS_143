@@ -52,25 +52,36 @@ class Network(object):
             newid = node_id
         else:
             newid = self.getNewNodeId()
-        if not self.G.has_node(newid):
+        if self.G.has_node(newid):
+            print "Graph already has said node. Not adding."
+            return newid
+        else:
             self.G.add_node(newid, host=1)
         self.nodes[newid] = Host(newid, [])
         return newid
 
-    def addLink(self, source_id, target_id, latency, rate):
+    def addLink(self, source_id, target_id,
+                rate=10, delay=10, buffsize=64, linkid=None):
         """ Adds a link from source_id to target_id
 
         :param source_id: id of a node
         :param target_id: id of a node
-        :param latency: latency of the link
-        :param latency: link rate
+        :param rate: link rate (Mbps)
+        :param delay: delay of the link (ms)
+        :param buffsize: link buffer size (KB)
+        :returns: integer or string key of the link
+
         """
         if (source_id in self.nodes and target_id in self.nodes):
+            # If no linkid is provided, generate a unique
+            if linkid is None:
+                linkid = self.getNewLinkId()
             if not self.G.has_edge(source_id, target_id):
                 self.G.add_edge(source_id, target_id,
-                                latency=latency, rate=rate)
-            linkid = self.getNewLinkId()
-            self.links[linkid] = Link(source_id, target_id, latency, rate)
+                                rate=rate, delay=delay,
+                                buffsize=buffsize, linkid=linkid)
+            self.links[linkid] = Link(source_id, target_id, rate,
+                                      delay, buffsize, linkid)
             self.nodes[source_id].addLink(linkid)
             self.nodes[target_id].addLink(linkid)
         else:
@@ -127,7 +138,10 @@ class Network(object):
                 self.addRouter(node)
 
         for edge in self.G.edges(data=True):
-            self.addLink(edge[0], edge[1], edge[2]['latency'], edge[2]['rate'])
+            linkid = edge[2].get('linkid', self.getNewLinkId())
+            self.addLink(edge[0], edge[1],
+                         edge[2]['rate'], edge[2]['delay'],
+                         edge[2]['buffsize'], linkid)
 
         if 'events' in self.G.graph:
             for i in self.G.graph['events']:
@@ -140,16 +154,6 @@ class Network(object):
                 self.events.append(PacketEvent(time, sender, receiver, packet))
         else:
             print("No events found for graph")
-
-    def getNewNodeId(self):
-        while(self.last_node in self.nodes):
-            self.last_node += 1
-        return self.last_node
-
-    def getNewLinkId(self):
-        while(self.last_link in self.links):
-            self.last_link += 1
-        return self.last_link
 
     def draw(self):
         colors = [self.G.node[n]['host'] for n in self.G.nodes()]

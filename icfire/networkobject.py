@@ -34,17 +34,18 @@ class NetworkObject(object):
 
 
 class Link(NetworkObject):
-
     """Represents link in a network
 
     This class represents a link in a network that packets can travel
     across"""
 
-    def __init__(self, nodeA, nodeB, latency, rate):
+    def __init__(self, nodeA, nodeB, rate, latency, buffsize, linkid):
         self.nodeA = nodeA
         self.nodeB = nodeB
-        self.latency = latency
         self.rate = rate
+        self.latency = latency
+        self.buffsize = buffsize
+        self.id = linkid
 
     def _processPacketEvent(self, packet_event):
         """Processes packet events
@@ -129,6 +130,7 @@ class Host(Node):
             self.links.append(link)
         else:
             print "Node %d already has a link!" % self.address
+            # todo: raise some type of error instead
 
 
 class Router(Node):

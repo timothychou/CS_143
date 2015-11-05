@@ -1,9 +1,12 @@
 from packet import Packet
 
+
 class Flow(object):
+
     """ Abstract class representing a Flow from one host to another.
 
-    There are many types of Flows governed by different congestion control algorithms.
+    There are many types of Flows governed by different congestion control
+    algorithms.
     """
 
     def __init__(self):
@@ -21,6 +24,7 @@ class Flow(object):
 
 
 class FlowRecipient(object):
+
     """ Class for the Flow recipient to manage the Flow. """
 
     def __init__(self, flowId):
@@ -40,10 +44,12 @@ class FlowRecipient(object):
             self.received.remove(self.lastAck)
             self.lastAck += 1
 
-        return Packet(packet.dest, packet.source, self.lastAck, packet.flowId, ack=True)
+        return Packet(packet.dest, packet.source, self.lastAck,
+                      packet.flowId, ack=True)
 
 
 class SuperSimpleFlow(Flow):
+
     """ The most basic type of Flow with window size 1. """
 
     def __init__(self, bytes, otherHost, flowId):

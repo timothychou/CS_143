@@ -1,7 +1,9 @@
-''' Unit test for the network construction'''
+''' Unit tests for the network construction '''
+import sys
+sys.path.append("C:\Users\Kevin\Documents\GitHub\CS_143")
 
 import unittest
-from network import *
+from icfire.network import *
 
 
 class NetworkTest(unittest.TestCase):
@@ -11,8 +13,8 @@ class NetworkTest(unittest.TestCase):
         a = network1.addHost()
         b = network1.addRouter()
         c = network1.addHost()
-        network1.addLink(a, b, rate=4000, latency=3)
-        network1.addLink(b, c, rate=700, latency=1000)
+        network1.addLink(a, b, rate=4000, delay=3)
+        network1.addLink(b, c, rate=700, delay=1000)
         network1.addEvent(a, c, 1000000, 1)
 
         self.assertEqual(len(network1.events), 1)
@@ -28,8 +30,8 @@ class NetworkTest(unittest.TestCase):
         self.assertEqual(a, 0)
         self.assertEqual(b, 1)
         self.assertEqual(c, 2)
-        network1.addLink(a, b, rate=4000, latency=3)
-        network1.addLink(b, c, rate=700, latency=1000)
+        network1.addLink(a, b, rate=4000, delay=3)
+        network1.addLink(b, c, rate=700, delay=1000)
         network1.addEvent(a, c, 1000000, 1)
         network1.save(filename)
 
@@ -48,8 +50,8 @@ class NetworkTest(unittest.TestCase):
         b = N.addRouter()
         c = N.addHost()
         self.assertEqual(N.getNewNodeId(), 3)
-        N.addLink(a, b, rate=4000, latency=3)
-        N.addLink(b, c, rate=700, latency=1000)
+        N.addLink(a, b, rate=4000, delay=3)
+        N.addLink(b, c, rate=700, delay=1000)
         N.addEvent(a, c, 1000000, 1)
         self.assertEqual(len(N.getNodeList()), 3)
         self.assertEqual(len(N.getLinkList()), 2)

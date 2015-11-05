@@ -1,10 +1,9 @@
 """ Unittests for networkobject.py """
+import sys
+sys.path.append("C:\Users\Kevin\Documents\GitHub\CS_143")
 
-from networkobject import NetworkObject
-from networkobject import Link
-from networkobject import Host
-from eventhandler import Event
-from eventhandler import PacketEvent
+from icfire.networkobject import NetworkObject, Link, Host
+from icfire.eventhandler import Event, PacketEvent
 import unittest
 
 

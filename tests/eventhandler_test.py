@@ -1,9 +1,9 @@
 """ Unittests for EventHandler. """
+import sys
+sys.path.append("C:\Users\Kevin\Documents\GitHub\CS_143")
 
-from eventhandler import EventHandler
-from eventhandler import Event
-from eventhandler import PacketEvent
-from networkobject import NetworkObject
+from icfire.eventhandler import EventHandler, Event, PacketEvent
+from icfire.networkobject import NetworkObject
 from Queue import Empty
 
 import unittest

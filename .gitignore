@@ -2,3 +2,5 @@ src/*.pyc
 src/*.py~
 src/*.sh~
 .idea/*
+old/*
+*.pyc
