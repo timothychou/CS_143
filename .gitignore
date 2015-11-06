@@ -1,6 +1,6 @@
-src/*.pyc
-src/*.py~
-src/*.sh~
+*/*.pyc
+*/*.py~
+*/*.sh~
 .idea/*
 old/*
 *.pyc

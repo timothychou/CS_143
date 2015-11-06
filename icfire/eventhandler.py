@@ -23,6 +23,7 @@ processEvent() should also return a list of new Events to enqueue.
 
 from Queue import PriorityQueue
 import time
+import logger
 
 
 class EventHandler:
@@ -51,6 +52,9 @@ class EventHandler:
         # Simply raise an Empty exception. This may be changed later.
         event = self._queue.get(block=False)
 
+        # Log each event
+        logger.Log('[%6s] %s' % (event.timestamp, event.logMessage))
+
         newevents = event.eventObject.processEvent(event)
         for e in newevents:
             self._queue.put(e)
@@ -64,8 +68,7 @@ class EventHandler:
         :return:
         """
 
-        # If interval is 0 we branch and do not sleep because Python is
-        # interpreted and sucks shit at optimizing.
+        # If interval is 0 we branch and to avoid calling time.sleep(0)
         if interval == 0:
             for i in xrange(steps):
                 self.step()
@@ -87,6 +90,8 @@ class Event(object):
         self.timestamp = timestamp
         self.eventObject = eventObject
         self.logMessage = logMessage
+        if not self.logMessage:
+            self.logMessage = 'An Event took place at %d on object %s' % (timestamp, eventObject)
 
     def __cmp__(self, other):
         """ Overloaded comparison operator using timestamp for the Priority Queue.
@@ -97,16 +102,45 @@ class Event(object):
 
 
 class PacketEvent(Event):
+    """ Event related to a Packet being received. """
 
     def __init__(self, timestamp, sender, receiver, packet, logMessage=None):
         """ Constructor for a PacketEvent.
 
         :param timestamp: time (integer) representing when the Event occurs.
-        :param sender: sender of the packet.
-        :param receiver: receiver of the packet.
+        :param sender: sender of the packet (object).
+        :param receiver: receiver of the packet (object).
         :param packet: actual packet being sent.
         :param logMessage: [optional] string describing the event for logging purposes.
         """
         super(self.__class__, self).__init__(timestamp, receiver, logMessage)
         self.sender = sender
         self.packet = packet
+
+
+class UpdateFlowEvent(Event):
+    """ Event that tells the Host to check on the Flow status (e.g. timeout). """
+
+    def __init__(self, timestamp, host, flowId, logMessage=None):
+        """ Constructor for an UpdateFlowEvent.
+
+        :param timestamp: time (integer) representing when the Event occurs.
+        :param host: Host that owns the Flow.
+        :param flowId: id of the Flow to check up on.
+        :param logMessage: [optional] string describing the event for logging purposes.
+        """
+        super(self.__class__, self).__init__(timestamp, host, logMessage)
+        self.flowId = flowId
+
+
+class LinkTickEvent(Event):
+    """ Event that tells the Link to send another Packet from its buffer. """
+
+    def __init__(self, timestamp, link, logMessage=None):
+        """ Constructor for an Event.
+
+        :param timestamp: time (integer) representing when the Event occurs.
+        :param link: Link that needs to send another packet.
+        :param logMessage: [optional] string describing the event for logging purposes.
+        """
+        super(self.__class__, self).__init__(timestamp, link, logMessage)

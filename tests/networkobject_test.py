@@ -20,7 +20,7 @@ class LinkTest(unittest.TestCase):
 
     def testProcessWithNonPacketEvent(self):
         """ Tests that processEvent will fail when not passed a PacketEvent. """
-        l = Link('nodeA', 'nodeB', 5, 5)
+        l = Link('nodeA', 'nodeB', 5, 5, 100, 0)
         e = Event(5, 'obj', 'message')
         e2 = PacketEvent(1, 'sender2', 'receiver3', 4, 'message5')
 
@@ -30,16 +30,17 @@ class LinkTest(unittest.TestCase):
 
     def testOtherNode(self):
         """ Tests _otherNode. """
-        l = Link('nodeA', 'nodeB', 5, 5)
+        l = Link('nodeA', 'nodeB', 5, 5, 100, 0)
         self.assertEqual('nodeA', l._otherNode('nodeB'))
         self.assertEqual('nodeB', l._otherNode('nodeA'))
 
 
 class HostTest(unittest.TestCase):
 
+    @unittest.skip('testSendPackets() disabled due to removal of method\n')
     def testSendPackets(self):
         """ Tests sendPackets generates the correct set of new Events. """
-        l = Link('nodeA', 'nodeB', 5, 5)
+        l = Link('nodeA', 'nodeB', 5, 5, 100, 0)
         h = Host('hostaddr', [l])
         newevents = h.sendPackets(10, 'destaddr', 42)
 

@@ -2,6 +2,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from networkx.readwrite import json_graph
 import json
+import flow
 
 from eventhandler import *
 from networkobject import *
@@ -16,15 +17,20 @@ class Network(object):
 
     It is capable of importing and exporting the network and its specifications
     to file
+
+    All add* methods should be called only at the beginning of the simulation.
+
     """
 
     def __init__(self):
         self.G = nx.Graph(events=[])
         self.nodes = dict()
         self.links = dict()
+        self.flows = dict()
         self.events = []
         self.last_node = 0
         self.last_link = 0
+        self.last_flow = 0
     # graph creation functions
 
     def addRouter(self, node_id=None):
@@ -80,10 +86,42 @@ class Network(object):
                 self.G.add_edge(source_id, target_id,
                                 rate=rate, delay=delay,
                                 buffsize=buffsize, linkid=linkid)
-            self.links[linkid] = Link(source_id, target_id, rate,
-                                      delay, buffsize, linkid)
-            self.nodes[source_id].addLink(linkid)
-            self.nodes[target_id].addLink(linkid)
+            self.links[linkid] = Link(self.nodes[source_id],
+                                      self.nodes[target_id],
+                                      rate, delay, buffsize, linkid)
+            self.nodes[source_id].addLink(self.links[linkid])
+            self.nodes[target_id].addLink(self.links[linkid])
+        else:
+            print("Source or target not in the graph!")
+            return
+
+    def addFlow(self, source_id, dest_id, bytes, timestamp, flowType):
+        """ Adds a new Flow from source_id to dest_id
+
+        Uses reflection on flowType to create the appropriate Flow object
+
+        :param source_id: source host id
+        :param dest_id: dest host id
+        :param bytes: number of bytes to send
+        :param timestamp: time that Flow sends first packet
+        :param flowType: name of Flow class to be used
+        """
+        if source_id in self.nodes and dest_id in self.nodes:
+            assert flowType in flow.__dict__
+
+            newFlowId = self.getNewFlowId()
+            f = flow.__dict__[flowType](source_id, dest_id, bytes, newFlowId)
+            self.flows[newFlowId] = f
+
+            self.nodes[source_id].addFlow(f)
+            self.nodes[dest_id].addFlowRecipient(flow.FlowRecipient(newFlowId))
+
+            # TODO(tangerine) Make additional relevant network changes in self.G
+
+            # Create an Event to update the Flow (send first packet)
+            self.events.append(
+                UpdateFlowEvent(timestamp, self.nodes[source_id], newFlowId,
+                                'Initialize flow %d' % newFlowId))
         else:
             print("Source or target not in the graph!")
             return
@@ -169,6 +207,11 @@ class Network(object):
         while(self.last_link in self.links):
             self.last_link += 1
         return self.last_link
+
+    def getNewFlowId(self):
+        while(self.last_flow in self.flows):
+            self.last_flow += 1
+        return self.last_flow
 
     def getLinkList(self):
         return list(self.links.keys())

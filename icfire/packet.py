@@ -22,3 +22,6 @@ class Packet(object):
         self.ack = ack
         self.fin = fin
         self.corrupted = corrupted
+
+        # TODO(tongcharlie) FIX SIZE IMPLEMENTATION
+        self.size = 1024

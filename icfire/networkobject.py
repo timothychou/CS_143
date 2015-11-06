@@ -1,7 +1,9 @@
 from eventhandler import PacketEvent
 from eventhandler import Event
+from eventhandler import UpdateFlowEvent
+from eventhandler import LinkTickEvent
 from packet import Packet
-
+import logger
 
 class NetworkObject(object):
 
@@ -39,31 +41,75 @@ class Link(NetworkObject):
     This class represents a link in a network that packets can travel
     across"""
 
-    def __init__(self, nodeA, nodeB, rate, latency, buffsize, linkid):
+    def __init__(self, nodeA, nodeB, rate, latency, maxbuffersize, linkid):
+        """ Create a Link
+
+        :param nodeA: Node that it is connected to (object)
+        :param nodeB: Node that it is connected to (object)
+        :param rate: rate (bytes per ms) that this Link can send
+        :param latency: time (ms) for a packet to propagate
+        :param maxbuffersize: maximum buffer size (combined for both sides)
+        :param linkid: id of the Link
+        """
         self.nodeA = nodeA
         self.nodeB = nodeB
-        self.rate = rate
+        self.rate = 1024   # TODO(choutim) right now it is hard coded as 1ms delay between packets
         self.latency = latency
-        self.buffsize = buffsize
+        self.maxbuffersize = maxbuffersize
         self.id = linkid
 
-    def _processPacketEvent(self, packet_event):
-        """Processes packet events
+        self.buffer = [None] * maxbuffersize    # Queue using a cyclic array
+        self.bufferindex = 0                    # index of the frontmost PacketEvent
+        self.buffersize = 0                     # number of items in the buffer
 
-        Creates a new PacketEvent of the host receiving the packet at some time
-        in the future.
+    def _processPacketEvent(self, packet_event):
+        """Processes packet events, storing them in the buffer."""
+        if self.buffersize == self.maxbuffersize:
+            logger.Log('Dropping packet...')
+            return
+
+        nextopen = (self.bufferindex + self.buffersize) % self.maxbuffersize
+        self.buffer[nextopen] = packet_event
+        self.buffersize += 1
+
+        # If this is the first packet in the buffer, then we start the LinkTickEvents
+        if self.buffersize == 1:
+            return [LinkTickEvent(packet_event.timestamp, self,
+                                  'Link %d processes a packet' % self.id)]
+        return []
+
+    def _linkTickEvent(self, event):
+        """ Dequeues a packet from the buffer and forwards it.
+
+        Also possibly generates a new LinkTickEvent if there are more packets in the buffer.
         """
-        return [PacketEvent(packet_event.timestamp + self.latency,
-                            self, self._otherNode(packet_event.sender),
-                            packet_event.packet,
-                            packet_event.logMessage)]
+        packet_event = self.buffer[self.bufferindex]
+        self.bufferindex = (self.bufferindex + 1) % self.maxbuffersize
+        self.buffersize -= 1
+
+        # Generate a new PacketEvent
+        # Use event.timestamp because this is when the packet is actually forwarded, not the PacketEvent time
+        otherNode = self._otherNode(packet_event.sender)
+        newpacketevent = PacketEvent(event.timestamp + self.latency,
+                                     self, otherNode, packet_event.packet,
+                                     'Host %s receives packet %s from link %s' %
+                                     (otherNode.address, packet_event.packet.index, self.id))
+
+        # Make a new LinkTickEvent
+        if self.buffersize:
+            newlinktickevent = LinkTickEvent(
+                event.timestamp + packet_event.packet.size/self.rate, self,
+                'Link %d processes a packet' % self.id)
+            return [newpacketevent, newlinktickevent]
+
+        return [newpacketevent]
 
     def _processOtherEvent(self, event):
-        """ Processes non-packet events
-
-        Links should only get packet events, so simply raises an error
-        """
-        raise AssertionError('Links should receive only packet events')
+        """ Processes non-packet events """
+        if isinstance(event, LinkTickEvent):
+            return self._linkTickEvent(event)
+        else:
+            raise NotImplementedError('Handling of %s not implemented' % event.__class__)
 
     def _otherNode(self, node):
         """returns the other node the link is connected to"""
@@ -80,8 +126,7 @@ class Node(NetworkObject):
         """
 
         :param address: unique address of this Node
-        :param links: list of links this Node is connected to
-        :return:
+        :param links: list of Links (objects) this Node is connected to
         """
         self.address = address
         self.links = links
@@ -99,30 +144,8 @@ class Host(Node):
 
     def __init__(self, address, links):
         super(self.__class__, self).__init__(address, links)
-
-    def _processPacketEvent(self, event):
-        """Processes packet event
-
-        sends back an ack as needed"""
-        packet = event.packet
-        assert packet.dest == self.address
-        if not packet.ack and not packet.corrupted:
-            newPacket = Packet(packet.dest, packet.source, ack=True)
-            return [PacketEvent(event.timestamp, self,
-                                self.links[0], newPacket)]
-        return []
-
-    def sendPackets(self, numPackets, dest, timestamp):
-        """Send numPackets packets to destination dest.
-
-        This method should be called directly or indirectly by an EventHandler.
-        """
-        events = []
-        for i in xrange(numPackets):
-            packet = Packet(self.address, dest, i)
-            # TODO make it so packets are not all sent at the same time
-            events.append(PacketEvent(timestamp, self, self.links[0], packet))
-        return events
+        self.flows = dict()
+        self.flowrecipients = dict()
 
     def addLink(self, link):
         """ Overwrites default add link to check for single link """
@@ -131,6 +154,63 @@ class Host(Node):
         else:
             print "Node %d already has a link!" % self.address
             # todo: raise some type of error instead
+
+    def addFlow(self, flow):
+        """ Add a Flow that this Host is sending. """
+        self.flows[flow.flowId] = flow
+
+    def addFlowRecipient(self, flowrecipient):
+        """ Add a Flow that this Host is receiving. """
+        self.flowrecipients[flowrecipient.flowId] = flowrecipient
+
+
+    def _processPacketEvent(self, event):
+        """Processes packet event
+
+        sends back an ack as needed"""
+        packet = event.packet
+        assert packet.dest == self.address
+
+        # Packet is ACK, update Flow accordingly
+        if packet.ack:
+            assert packet.flowId in self.flows
+            newpackets = self.flows[packet.flowId].receiveAckPacket(packet)
+            return [PacketEvent(event.timestamp, self,
+                                self.links[0], p,
+                                'Flow %s, packet %s from host %s to link %s' %
+                                (p.flowId, p.index, self.address, self.links[0].id))
+                    for p in newpackets]
+
+
+        # Treat packet as data packet, return appropriate ACK
+        else:
+            assert packet.flowId in self.flowrecipients
+
+            # TODO(choutim) include packet integrity checks, maybe
+
+            newPacket = self.flowrecipients[packet.flowId].receiveDataPacket(packet)
+            return [PacketEvent(event.timestamp, self,
+                                self.links[0], newPacket,
+                                'ACK %s for flow %s from host %s to link %s' %
+                                (newPacket.index, newPacket.flowId, self.address, self.links[0].id))]
+
+    def _processOtherEvent(self, event):
+        """ Processes non-packet events """
+        if isinstance(event, UpdateFlowEvent):
+            return self._processUpdateFlowEvent(event)
+        else:
+            raise NotImplementedError('Handling of %s not implemented' % event.__class__)
+
+    def _processUpdateFlowEvent(self, update_flow_event):
+        f = self.flows[update_flow_event.flowId]
+        t = update_flow_event.timestamp
+
+        # Send packets
+        newpackets = f.sendPackets()
+        return [PacketEvent(t, self, self.links[0], p,
+                            'Flow %s, packet %s from host %s to link %s' %
+                            (f.flowId, p.index, self.address, self.links[0].id))
+                for p in newpackets]
 
 
 class Router(Node):

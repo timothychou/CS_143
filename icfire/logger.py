@@ -1,1 +1,3 @@
-__author__ = 'Charlie'
+
+def Log(logMessage):
+    print logMessage
