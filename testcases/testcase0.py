@@ -18,6 +18,11 @@ def buildNetwork():
 
 
 if __name__ == '__main__':
+    filename = 'testcase0.json'
     tc0 = buildNetwork()
-    eh = EventHandler(tc0)
+    tc0.save(filename)
+
+    tc0a = Network()
+    tc0a.load(filename)
+    eh = EventHandler(tc0a)
     eh.run(0, 100)

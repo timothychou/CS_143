@@ -1,0 +1,1 @@
+{"directed": false, "graph": [["flows", {"0": {"source_id": "h1", "timestamp": 100, "dest_id": "h2", "bytes": 10000, "flowType": "SuperSimpleFlow"}}]], "nodes": [{"host": 1, "id": "h2"}, {"host": 1, "id": "h1"}], "links": [{"target": 1, "buffsize": 64, "linkid": "L1", "delay": 10, "source": 0, "rate": 10}], "multigraph": false}

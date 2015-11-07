@@ -23,7 +23,7 @@ class Network(object):
     """
 
     def __init__(self):
-        self.G = nx.Graph(events=[])
+        self.G = nx.Graph(flows=[])
         self.nodes = dict()
         self.links = dict()
         self.flows = dict()
@@ -58,8 +58,8 @@ class Network(object):
             newid = node_id
         else:
             newid = self.getNewNodeId()
-        if self.G.has_node(newid):
-            print "Graph already has said node. Not adding."
+        if newid in self.G:
+            print "Graph already has node " + node_id + ". Not adding."
             return newid
         else:
             self.G.add_node(newid, host=1)
@@ -95,7 +95,7 @@ class Network(object):
             print("Source or target not in the graph!")
             return
 
-    def addFlow(self, source_id, dest_id, bytes, timestamp, flowType):
+    def createFlow(self, source_id, dest_id, bytes, timestamp, flowType):
         """ Adds a new Flow from source_id to dest_id
 
         Uses reflection on flowType to create the appropriate Flow object
@@ -105,53 +105,88 @@ class Network(object):
         :param bytes: number of bytes to send
         :param timestamp: time that Flow sends first packet
         :param flowType: name of Flow class to be used
+        :returns: if a flow has been created, the flowId is returned
         """
-        if source_id in self.nodes and dest_id in self.nodes:
-            assert flowType in flow.__dict__
-
-            newFlowId = self.getNewFlowId()
-            f = flow.__dict__[flowType](source_id, dest_id, bytes, newFlowId)
-            self.flows[newFlowId] = f
-
-            self.nodes[source_id].addFlow(f)
-            self.nodes[dest_id].addFlowRecipient(flow.FlowRecipient(newFlowId))
-
-            # TODO(tangerine) Make additional relevant network changes in self.G
-
-            # Create an Event to update the Flow (send first packet)
-            self.events.append(
-                UpdateFlowEvent(timestamp, self.nodes[source_id], newFlowId,
-                                'Initialize flow %d' % newFlowId))
-        else:
+        if source_id not in self.nodes or dest_id not in self.nodes:
             print("Source or target not in the graph!")
-            return
+            return None
 
-    def addEvent(self, host_id, target_id, size=0, time=0):
-        """ Adds an event to the graph description
+        assert flowType in flow.__dict__
 
-        It checks that the ids in the events actually exist first.
+        newFlowId = self.getNewFlowId()
+        f = flow.__dict__[flowType](source_id, dest_id, bytes, newFlowId)
+        self.flows[newFlowId] = f
 
-        :param host_id: the thing sending events
-        :param target_id: the target
-        :param size: size of data being sent (optional)
-        :param time: time (integer) representing when the Event should happen.
+        self.nodes[source_id].addFlow(f)
+        self.nodes[dest_id].addFlowRecipient(flow.FlowRecipient(newFlowId))
+
+        # Create an Event to update the Flow (send first packet)
+        self.events.append(
+            UpdateFlowEvent(timestamp, self.nodes[source_id], newFlowId,
+                            'Initialize flow %d' % newFlowId))
+        return newFlowId
+
+    def addFlow(self, source_id, dest_id, bytes, timestamp, flowType):
+        """ This function adds a flow to the network description
+
+        This also creates the flow if the flow has not been created already
+
+        :param source_id: source host id
+        :param dest_id: dest host id
+        :param bytes: number of bytes to send
+        :param timestamp: time that Flow sends first packet
+        :param flowType: name of Flow class to be used
         """
-        if host_id in self.nodes:
-            if target_id not in self.nodes:
-                print("target_id not found")
+        # Check if the network has a flow list yet
+        if not isinstance(self.G.graph.get('flows'), dict):
+            self.G.graph['flows'] = dict()
+        if source_id in self.nodes:
+            if dest_id not in self.nodes:
+                print("dest_id not found")
                 return
             else:
+                newFlowId = self.createFlow(source_id, dest_id, bytes,
+                                            timestamp, flowType)
                 eventjson = {
-                    'host_id': host_id,
-                    'target_id': target_id,
-                    'size': size,
-                    'time': time,
+                    'source_id': source_id,
+                    'dest_id': dest_id,
+                    'bytes': bytes,
+                    'timestamp': timestamp,
+                    'flowType': flowType,
                 }
-                self.G.graph['events'].append(eventjson)
-                self.events.append(
-                    PacketEvent(time, host_id, target_id, size))  # TODO
+                self.G.graph['flows'][newFlowId] = eventjson
         else:
             print("host_id not found")
+
+    def loadFlows(self, filename=None):
+        """ This function loads flows from file and instantiates them.
+
+        If it is not given a filename, it tries to load from the graph.
+
+        :param filename: optional filename
+        """
+
+        if filename is None:
+            G = self.G
+        else:
+            with open(filename, 'r') as f:
+                data = json.load(f)
+                G = json_graph.node_link_graph(data)
+
+        assert len(G) > 0
+
+        if 'flows' in self.G.graph:
+            flows = self.G.graph['flows']
+            for i in flows:
+                # generate events
+                source_id = flows[i].get('source_id')
+                dest_id = flows[i].get('dest_id')
+                bytes = flows[i].get('bytes')
+                timestamp = flows[i].get('timestamp')
+                flowType = flows[i].get('flowType', 'Flow')
+                self.createFlow(source_id, dest_id, bytes,
+                                timestamp, flowType)
+                # todo: generate packet from event
 
     def save(self, filename):
         """ Writes the data to file
@@ -168,30 +203,22 @@ class Network(object):
             data = json.load(f)
         self.G = json_graph.node_link_graph(data)
         self.last_node = max(self.G.nodes())
-        for node in self.G.nodes():
+        for node_id in self.G.nodes():
             # generate hosts and routers
-            if (self.G.node[node]['host']):
-                self.addHost(node)
+            if (self.G.node[node_id].get('host')):
+                self.nodes[node_id] = Host(node_id)
             else:
-                self.addRouter(node)
+                self.nodes[node_id] = Router(node_id)
 
         for edge in self.G.edges(data=True):
             linkid = edge[2].get('linkid', self.getNewLinkId())
             self.addLink(edge[0], edge[1],
-                         edge[2]['rate'], edge[2]['delay'],
-                         edge[2]['buffsize'], linkid)
+                         edge[2].get('rate'),
+                         edge[2].get('delay'),
+                         edge[2].get('buffsize'),
+                         linkid)
 
-        if 'events' in self.G.graph:
-            for i in self.G.graph['events']:
-                # generate events
-                time = i['time']
-                sender = i['host_id']
-                receiver = i['target_id']
-                # todo: generate packet from event
-                packet = i['size']
-                self.events.append(PacketEvent(time, sender, receiver, packet))
-        else:
-            print("No events found for graph")
+        self.loadFlows()
 
     def draw(self):
         colors = [self.G.node[n]['host'] for n in self.G.nodes()]

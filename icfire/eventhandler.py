@@ -51,7 +51,6 @@ class EventHandler:
         # When we get an object from the queue, do not block if empty.
         # Simply raise an Empty exception. This may be changed later.
         event = self._queue.get(block=False)
-
         # Log each event
         logger.Log('[%6s] %s' % (event.timestamp, event.logMessage))
 

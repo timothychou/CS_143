@@ -16,10 +16,8 @@ class NetworkTest(unittest.TestCase):
         c = network1.addHost()
         network1.addLink(a, b, rate=4000, delay=3)
         network1.addLink(b, c, rate=700, delay=1000)
-        network1.addEvent(a, c, 1000000, 1)
-
-        self.assertEqual(len(network1.events), 1)
-        self.assertEqual(len(network1.events), 1)
+        network1.addFlow(a, c, bytes=1000, timestamp=1,
+                         flowType="SuperSimpleFlow")
 
     def testImport(self):
         # Generate data file
@@ -33,15 +31,17 @@ class NetworkTest(unittest.TestCase):
         self.assertEqual(c, 2)
         network1.addLink(a, b, rate=4000, delay=3)
         network1.addLink(b, c, rate=700, delay=1000)
-        network1.addEvent(a, c, 1000000, 1)
+        network1.addFlow(a, c, bytes=1000, timestamp=1,
+                         flowType="SuperSimpleFlow")
         network1.save(filename)
 
         # Load dataset
         network1.save(filename)
         network2 = Network()
+        print("hllo")
         network2.load(filename)
-        self.assertIn('events', network2.G.graph)
-        self.assertEqual(len(network2.events), 1)
+        print(network2.nodes[2])
+        print(network2.nodes[2].links)
 
     def testGets(self):
         N = Network()
@@ -53,7 +53,8 @@ class NetworkTest(unittest.TestCase):
         self.assertEqual(N.getNewNodeId(), 3)
         N.addLink(a, b, rate=4000, delay=3)
         N.addLink(b, c, rate=700, delay=1000)
-        N.addEvent(a, c, 1000000, 1)
+        N.addFlow(a, c, bytes=1000, timestamp=1,
+                         flowType="SuperSimpleFlow")
         self.assertEqual(len(N.getNodeList()), 3)
         self.assertEqual(len(N.getLinkList()), 2)
 
