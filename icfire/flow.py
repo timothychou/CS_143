@@ -83,30 +83,6 @@ class SuperSimpleFlow(Flow):
 
         return []
 
-class FlowRecipient(object):
-
-    """ Class for the Flow recipient to manage the Flow. """
-
-    def __init__(self, flowId):
-        self.flowId = flowId
-
-        self.received = []  # List of received packet indices
-        self.lastAck = 0    # Last ack index sent (expected next packet index)
-
-    def receiveDataPacket(self, packet):
-        """ Note the received packet and respond with the appropriate ACK packet
-
-        :param packet: received data packet
-        :return: new ACK packet
-        """
-        self.received.append(packet.index)
-        while self.lastAck in self.received:
-            self.received.remove(self.lastAck)
-            self.lastAck += 1
-
-        return Packet(packet.dest, packet.source, self.lastAck,
-                      packet.flowId, ack=True)
-
 
 class SuperSimpleFlow2(Flow):
 
@@ -158,3 +134,28 @@ class SuperSimpleFlow2(Flow):
                     break
 
         return newpackets
+
+
+class FlowRecipient(object):
+
+    """ Class for the Flow recipient to manage the Flow. """
+
+    def __init__(self, flowId):
+        self.flowId = flowId
+
+        self.received = []  # List of received packet indices
+        self.lastAck = 0    # Last ack index sent (expected next packet index)
+
+    def receiveDataPacket(self, packet):
+        """ Note the received packet and respond with the appropriate ACK packet
+
+        :param packet: received data packet
+        :return: new ACK packet
+        """
+        self.received.append(packet.index)
+        while self.lastAck in self.received:
+            self.received.remove(self.lastAck)
+            self.lastAck += 1
+
+        return Packet(packet.dest, packet.source, self.lastAck,
+                      packet.flowId, ack=True)

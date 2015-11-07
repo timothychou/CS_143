@@ -28,8 +28,13 @@ import logger
 
 class EventHandler:
 
-    def __init__(self, network, initialEvents=[]):
-        """ Constructor for an EventHandler. """
+    def __init__(self, network, initialEvents=None):
+        """ Constructor for an EventHandler.
+
+        :param network: network.Network object that models the network
+        :param initialEvents: List of initial events
+        :return:
+        """
         self._network = network
         self._queue = PriorityQueue()
         if initialEvents:

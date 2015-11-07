@@ -129,14 +129,17 @@ class Node(NetworkObject):
 
     This class represents a node in a network connected by edges"""
 
-    def __init__(self, address, links=[]):
-        """
+    def __init__(self, address, links=None):
+        """ Constructor for Node
 
         :param address: unique address of this Node
         :param links: list of Links (objects) this Node is connected to
         """
         self.address = address
-        self.links = links
+        if not links:
+            self.links = []
+        else:
+            self.links = links
 
     def addLink(self, target):
         self.links.append(target)
@@ -149,7 +152,12 @@ class Host(Node):
     This class represents a host in a network that is able to receive and
     send data"""
 
-    def __init__(self, address, links=[]):
+    def __init__(self, address, links=None):
+        """ Constructor for Host
+
+        :param address: unique address of this Node
+        :param links: list of Links (objects) this Node is connected to
+        """
         super(self.__class__, self).__init__(address, links)
         self.flows = dict()
         self.flowrecipients = dict()
@@ -229,7 +237,12 @@ class Router(Node):
     This class represents a router in a network that is able to
     route packets"""
 
-    def __init__(self, address, links=[]):
+    def __init__(self, address, links=None):
+        """ Constructor for Router
+
+        :param address: unique address of this Node
+        :param links: list of Links (objects) this Node is connected to
+        """
         super(self.__class__, self).__init__(address, links)
         self.routing_table = dict()
         # The routing table should either have a default starting state, or
