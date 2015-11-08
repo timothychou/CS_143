@@ -190,6 +190,12 @@ class Host(Node):
         assert packet.dest == self.address
 
         # Packet is ACK, update Flow accordingly
+        if isinstance(event.packet, RoutingRequestPacket):
+            return [PacketEvent(event.timestamp, self, self.links[0], 
+                                RoutingPacket(self.address, 
+                                              routingTable={self.address: [self.address, 0]}))]
+        
+        
         if packet.ack:
             assert packet.flowId in self.flows
             newpackets = self.flows[packet.flowId].receiveAckPacket(packet)
@@ -264,15 +270,15 @@ class Router(Node):
         """
         if isinstance(event.packet, RoutingPacket):
             self.neighborRouting.append([event.packet.routingTable,
-                                         event.sender.cost()])
+                                         event.sender.cost(), event.sender])
             if len(self.neighborRouting) == len(links):
                 # got routing tables from all neighbors, merge and update
                 # with current table
                 
-                for routingTable, cost in self.neighborRouting:
+                for routingTable, cost, link in self.neighborRouting:
                     for key, val in routingTable.iteritems():
                         if self.routing_table.get(key, [0,sys.maxint])[1] > (val[1] + cost):
-                            routing_table[key] = [val[0], val[1] + cost]
+                            routing_table[key] = [link, val[1] + cost]
                             
 
 
@@ -286,10 +292,10 @@ class Router(Node):
                                               ))]
 
 
-            
-        return [PacketEvent(event.timestamp, self,
-                            self.getRoute(event.packet.destination),
-                            event.packet)]
+        else:
+            return [PacketEvent(event.timestamp, self,
+                                self.getRoute(event.packet.destination),
+                                event.packet)]
 
     def _UpdateRoutingTable(self, event):
         """ Updates the internal routing table.
