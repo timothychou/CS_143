@@ -3,7 +3,7 @@ class Packet(object):
 
     It can be sent between routers and hosts'''
 
-    def __init__(self, source, dest, index, 
+    def __init__(self, source, dest, index, size,
                  ack=False, fin=False, corrupted=False):
         """
 
@@ -23,49 +23,38 @@ class Packet(object):
         self.fin = fin
         self.corrupted = corrupted
 
-        # TODO(tongcharlie) FIX SIZE IMPLEMENTATION
-        self.size = 1024
+        self.size = size
+
 
 class DataPacket(Packet):
-    '''This class represents a packet transferring arbitrary data'''
+    """ This class represents a packet transferring arbitrary data """
 
-    def __init__(self, source, dest, index, flowId,
-                 ack=False, fin=False, corrupted=False):
-        super(self.__class__, self).__init__(source, dest, index, ack, fin,
-                                             corrupted)
+    def __init__(self, source, dest, index, flowId):
+        super(self.__class__, self).__init__(source, dest, index, size=1024)
+
         self.flowId = flowId
-        self.size = 1024
         
 
 class AckPacket(Packet):
-    '''This class represents an ack packet'''
+    """ This class represents an ack packet """
 
-    def __init__(self, source, dest, index, 
-                 ack=False, fin=False, corrupted=False):
+    def __init__(self, source, dest, index, flowId):
+        super(self.__class__, self).__init__(source, dest, index, size=64, ack=True)
 
-        super(self.__class__, self).__init__(source, dest, index, 
-                                             ack, fin, corrupted)
-        self.ack = True
-        self.size = 64
+        self.flowId = flowId
+
 
 class RoutingPacket(Packet):
-    '''
-    This class represents a routing table packet'''
+    """ This class represents a routing table packet """
     
-    def __init__(self, source, 
-                 ack=False, fin=False, corrupted=False, routingTable=None):
-        super(self.__class__, self).__init__(source, -1, 0,
-                                             ack, fin, corrupted)
-        self.size = 1024
+    def __init__(self, source, dest, routingTable=None):
+        super(self.__class__, self).__init__(source, dest, index=None, size=1024)
 
-        self.routingTable = routingTable
+        self.routingTable = routingTable    # Routing table can fit inside 1024 bytes
+
 
 class RoutingRequestPacket(Packet):
-    ''' This class represents a request for routing table'''
+    """ This class represents a request for routing table """
 
-    def __init__(self, source, ack=False, fin=False, corrupted=False):
-
-        super(self.__class__, self).__init__(source, -1, 0,
-                                             ack, fin, corrupted)
-
-        self.size = 64
+    def __init__(self, source):
+        super(self.__class__, self).__init__(source, dest=None, index=None, size=64)

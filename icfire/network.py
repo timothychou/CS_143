@@ -93,9 +93,10 @@ class Network(object):
                                       rate, delay, buffsize, linkid)
             self.nodes[source_id].addLink(self.links[linkid])
             self.nodes[target_id].addLink(self.links[linkid])
+            return linkid
         else:
             print("Source or target not in the graph!")
-            return
+            return None
 
     def addFlow(self, source_id, dest_id, bytes, timestamp, flowType):
         """ This function adds a flow to the network description

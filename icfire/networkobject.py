@@ -3,12 +3,15 @@ from eventhandler import Event
 from eventhandler import UpdateFlowEvent
 from eventhandler import LinkTickEvent
 import sys
-# from packet import Packet
+from packet import RoutingPacket
+from packet import RoutingRequestPacket
+from packet import DataPacket
+from packet import AckPacket
 import logger
+import random
 
 
 class NetworkObject(object):
-
     """abstract class for all network objects"""
 
     def __init__(self):
@@ -38,7 +41,6 @@ class NetworkObject(object):
 
 
 class Link(NetworkObject):
-
     """Represents link in a network
 
     This class represents a link in a network that packets can travel
@@ -61,9 +63,9 @@ class Link(NetworkObject):
         self.maxbuffersize = maxbuffersize
         self.id = linkid
 
-        self.buffer = [None] * maxbuffersize    # Queue using a cyclic array
-        self.bufferindex = 0                    # index of the front PacketEvent
-        self.buffersize = 0                     # number of items in the buffer
+        self.buffer = [None] * maxbuffersize  # Queue using a cyclic array
+        self.bufferindex = 0  # index of the front PacketEvent
+        self.buffersize = 0  # number of items in the buffer
 
     def _processPacketEvent(self, packet_event):
         """Processes packet events, storing them in the buffer."""
@@ -95,21 +97,21 @@ class Link(NetworkObject):
         # Use event.timestamp because this is when the packet is actually
         # forwarded, not the PacketEvent time
         otherNode = self._otherNode(packet_event.sender)
-        newpacketevent = PacketEvent(event.timestamp + self.delay,
-                                     self, otherNode, packet_event.packet,
-                                     'Host %s receives packet %s from link %s' %
-                                     (otherNode.address,
-                                      packet_event.packet.index,
-                                      self.id))
+        newevents = [PacketEvent(event.timestamp + self.delay,
+                                 self, otherNode, packet_event.packet,
+                                 'Node %s receives packet %s from link %s' %
+                                 (otherNode.address,
+                                  packet_event.packet.index,
+                                  self.id))]
 
         # Make a new LinkTickEvent
         if self.buffersize:
-            newlinktickevent = LinkTickEvent(
-                event.timestamp + packet_event.packet.size / self.rate, self,
-                'Link %d processes a packet' % self.id)
-            return [newpacketevent, newlinktickevent]
+            nexTickTime = event.timestamp + \
+                          packet_event.packet.size * 8.0 / self.rate / 1024 / 1024 * 1000
+            newevents.append(LinkTickEvent(nexTickTime, self,
+                                           'Link %s processes a packet' % self.id))
 
-        return [newpacketevent]
+        return newevents
 
     def _processOtherEvent(self, event):
         """ Processes non-packet events """
@@ -124,11 +126,11 @@ class Link(NetworkObject):
         return self.nodeB if node == self.nodeA else self.nodeA
 
     def cost(self):
-        ''' cost of going through this edge'''
-        return random.random()
+        """ cost of going through this edge """
+        return random.random()  # TODO(choutim) fix
+
 
 class Node(NetworkObject):
-
     """ class that represents a node in a network
 
     This class represents a node in a network connected by edges"""
@@ -150,7 +152,6 @@ class Node(NetworkObject):
 
 
 class Host(Node):
-
     """ Represents a host in a network
 
     This class represents a host in a network that is able to receive and
@@ -189,25 +190,25 @@ class Host(Node):
         packet = event.packet
         assert packet.dest == self.address
 
-        # Packet is ACK, update Flow accordingly
+        # Handle routing table update requests
         if isinstance(event.packet, RoutingRequestPacket):
-            return [PacketEvent(event.timestamp, self, self.links[0], 
-                                RoutingPacket(self.address, 
+            return [PacketEvent(event.timestamp, self, self.links[0],
+                                RoutingPacket(self.address, event.packet.source,
                                               routingTable={self.address: [self.address, 0]}))]
-        
-        
-        if packet.ack:
+
+        # Packet is ACK, update Flow accordingly
+        elif isinstance(event.packet, AckPacket):
             assert packet.flowId in self.flows
             newpackets = self.flows[packet.flowId].receiveAckPacket(packet)
             return [PacketEvent(event.timestamp, self,
                                 self.links[0], p,
                                 'Flow %s, packet %s from host %s to link %s' %
                                 (p.flowId, p.index,
-                                    self.address, self.links[0].id))
+                                 self.address, self.links[0].id))
                     for p in newpackets]
 
         # Treat packet as data packet, return appropriate ACK
-        else:
+        elif isinstance(event.packet, DataPacket):
             assert packet.flowId in self.flowrecipients
 
             # TODO(choutim) include packet integrity checks, maybe
@@ -218,7 +219,12 @@ class Host(Node):
                                 self.links[0], newPacket,
                                 'ACK %s for flow %s from host %s to link %s' %
                                 (newPacket.index, newPacket.flowId,
-                                    self.address, self.links[0].id))]
+                                 self.address, self.links[0].id))]
+
+        # Else we don't know what to do
+        else:
+            raise NotImplementedError(
+                'Handling of %s not implemented' % event.packet.__class__)
 
     def _processOtherEvent(self, event):
         """ Processes non-packet events """
@@ -241,7 +247,6 @@ class Host(Node):
 
 
 class Router(Node):
-
     """ Represents router in a network
 
     This class represents a router in a network that is able to
@@ -250,13 +255,18 @@ class Router(Node):
     def __init__(self, address, links=None):
         """ Constructor for Router
 
+        The routing table should either have a default starting state, or
+        _UpdateRoutingTable should be called once. Otherwise, the Router
+        will not be able to forward anything at all.
+
         :param address: unique address of this Node
         :param links: list of Links (objects) this Node is connected to
         """
         super(self.__class__, self).__init__(address, links)
-        self.routing_table = dict() # dic with destination address as key
+
+        # dict with destination address as key
         # values are 2-tuples (link object, distance)
-        self.neighborRouting = []
+        self.routing_table = dict()
 
         # The routing table should either have a default starting state, or
         # _UpdateRoutingTable should be called once. Otherwise, the Router
@@ -268,34 +278,35 @@ class Router(Node):
         Timestamp is not changed because there is no
         delay through the router.
         """
+
+        # Received routing table information, update table
         if isinstance(event.packet, RoutingPacket):
-            self.neighborRouting.append([event.packet.routingTable,
-                                         event.sender.cost(), event.sender])
-            if len(self.neighborRouting) == len(links):
-                # got routing tables from all neighbors, merge and update
-                # with current table
-                
-                for routingTable, cost, link in self.neighborRouting:
-                    for key, val in routingTable.iteritems():
-                        if self.routing_table.get(key, [0,sys.maxint])[1] > (val[1] + cost):
-                            routing_table[key] = [link, val[1] + cost]
-                            
+            neighborTable = event.packet.routingTable
+            link = event.sender
+            cost = link.cost()
 
+            for key, val in neighborTable.iteritems():
+                if self.routing_table.get(key, [0, sys.maxint])[1] > (val[1] + cost):
+                    self.routing_table[key] = [link, val[1] + cost]
 
-                    
-
+        # Received routing table request
         elif isinstance(event.packet, RoutingRequestPacket):
             # process request for routing table
             return [PacketEvent(event.timestamp, self, self.event.source,
-                                RoutingPacket(self.address, 
-                                              routingTable = self.routing_table
-                                              ))]
+                                RoutingPacket(self.address, event.packet.source,
+                                              routingTable=self.routing_table))]
 
-
-        else:
+        # Data packet, forward to correct link
+        elif isinstance(event.packet, DataPacket) or isinstance(event.packet, AckPacket):
+            nextLink = self.getRoute(event.packet.dest)
             return [PacketEvent(event.timestamp, self,
-                                self.getRoute(event.packet.destination),
-                                event.packet)]
+                                nextLink, event.packet,
+                                'Router %s forwards packet to %s' % (self.address, nextLink.id))]
+
+        # Else we don't know what to do
+        else:
+            raise NotImplementedError(
+                'Handling of %s not implemented' % event.packet.__class__)
 
     def _UpdateRoutingTable(self, event):
         """ Updates the internal routing table.
@@ -305,12 +316,9 @@ class Router(Node):
         """
         # TODO(choutim) Implement at a later time.
         # request routing table from all neighbors
-        self.neighborRouting = []
-        return [PacketEvent(event.timestamp, self, link, 
-                            RoutingRequestPacket(self.address)) 
-                for link in links]
-        
-
+        return [PacketEvent(event.timestamp, self, link,
+                            RoutingRequestPacket(self.address))
+                for link in self.links]
 
     def getRoute(self, destination):
         """checks routing table for route to destination"""

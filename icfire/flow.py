@@ -1,4 +1,5 @@
-from packet import Packet
+from packet import AckPacket
+from packet import DataPacket
 
 
 class Flow(object):
@@ -78,8 +79,8 @@ class SuperSimpleFlow(Flow):
         if self.lastAck > self.lastSent:
             assert self.lastAck == self.lastSent + 1
             self.lastSent += 1
-            return [Packet(self.source_id, self.dest_id,
-                           self.lastSent, self.flowId)]
+            return [DataPacket(self.source_id, self.dest_id,
+                               self.lastSent, self.flowId)]
 
         return []
 
@@ -101,7 +102,7 @@ class SuperSimpleFlow2(Flow):
         self.bytes = bytes
         self.flowId = flowId
 
-        self.windowsize = 2
+        self.windowsize = 10
 
         self.acks = [0]
         self.inflight = []
@@ -109,10 +110,10 @@ class SuperSimpleFlow2(Flow):
     def receiveAckPacket(self, packet):
         """ A new ACK number means that the next packet can be sent.
 
-        :param packet: The ACK packet received
+        :param packet: The AckPacket received
         :return: A list of new packets
         """
-        assert packet.ack
+        assert isinstance(packet, AckPacket)
         self.acks.append(packet.index)
         self.inflight.remove(packet.index - 1)
         return self.sendPackets()
@@ -128,8 +129,8 @@ class SuperSimpleFlow2(Flow):
         while len(self.inflight) < self.windowsize:
             for i in range(self.windowsize):
                 if lastack + i not in self.inflight:
-                    newpackets.append(Packet(self.source_id, self.dest_id,
-                                             lastack + i, self.flowId))
+                    newpackets.append(DataPacket(self.source_id, self.dest_id,
+                                                 lastack + i, self.flowId))
                     self.inflight.append(lastack + i)
                     break
 
@@ -150,12 +151,11 @@ class FlowRecipient(object):
         """ Note the received packet and respond with the appropriate ACK packet
 
         :param packet: received data packet
-        :return: new ACK packet
+        :return: new AckPacket
         """
         self.received.append(packet.index)
         while self.lastAck in self.received:
             self.received.remove(self.lastAck)
             self.lastAck += 1
 
-        return Packet(packet.dest, packet.source, self.lastAck,
-                      packet.flowId, ack=True)
+        return AckPacket(packet.dest, packet.source, self.lastAck, packet.flowId)
