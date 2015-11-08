@@ -43,8 +43,10 @@ class Network(object):
             newid = node_id
         else:
             newid = self.getNewNodeId()
-        if not self.G.has_node(newid):
-            self.G.add_node(newid, host=0)
+        if self.G.has_node(newid):
+            print("router " + node_id + " is already in the graph.")
+            return
+        self.G.add_node(newid, host=0)
         self.nodes[newid] = Router(newid, [])
         return newid
 
@@ -221,7 +223,12 @@ class Network(object):
 
     def draw(self):
         colors = [self.G.node[n]['host'] for n in self.G.nodes()]
-        nx.draw(self.G, node_color=colors)
+        pos = nx.spring_layout(self.G)
+        nx.draw(self.G, pos=pos, node_color=colors)
+        nx.draw_networkx_labels(self.G, pos, font_color='w')
+        edges = self.G.edges(data=True)
+        edgelabels = dict(((edge[0], edge[1]), str(edge[2].get('rate')) + ' mbps') for edge in edges)
+        nx.draw_networkx_edge_labels(self.G, pos, edge_labels=edgelabels)
         plt.show()
 
     def getNewNodeId(self):
