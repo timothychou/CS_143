@@ -38,7 +38,6 @@ class NetworkTest(unittest.TestCase):
         # Load dataset
         network1.save(filename)
         network2 = Network()
-        print("hllo")
         network2.load(filename)
         print(network2.nodes[2])
         print(network2.nodes[2].links)
