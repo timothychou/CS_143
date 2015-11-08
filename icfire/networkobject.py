@@ -2,6 +2,7 @@ from eventhandler import PacketEvent
 from eventhandler import Event
 from eventhandler import UpdateFlowEvent
 from eventhandler import LinkTickEvent
+import sys
 # from packet import Packet
 import logger
 
@@ -122,6 +123,9 @@ class Link(NetworkObject):
         """returns the other node the link is connected to"""
         return self.nodeB if node == self.nodeA else self.nodeA
 
+    def cost(self):
+        ''' cost of going through this edge'''
+        return random.random()
 
 class Node(NetworkObject):
 
@@ -244,7 +248,10 @@ class Router(Node):
         :param links: list of Links (objects) this Node is connected to
         """
         super(self.__class__, self).__init__(address, links)
-        self.routing_table = dict()
+        self.routing_table = dict() # dic with destination address as key
+        # values are 2-tuples (link object, distance)
+        self.neighborRouting = []
+
         # The routing table should either have a default starting state, or
         # _UpdateRoutingTable should be called once. Otherwise, the Router
         # will not be able to forward anything at all.
@@ -255,19 +262,50 @@ class Router(Node):
         Timestamp is not changed because there is no
         delay through the router.
         """
+        if isinstance(event.packet, RoutingPacket):
+            self.neighborRouting.append([event.packet.routingTable,
+                                         event.sender.cost()])
+            if len(self.neighborRouting) == len(links):
+                # got routing tables from all neighbors, merge and update
+                # with current table
+                
+                for routingTable, cost in self.neighborRouting:
+                    for key, val in routingTable.iteritems():
+                        if self.routing_table.get(key, [0,sys.maxint])[1] > (val[1] + cost):
+                            routing_table[key] = [val[0], val[1] + cost]
+                            
+
+
+                    
+
+        elif isinstance(event.packet, RoutingRequestPacket):
+            # process request for routing table
+            return [PacketEvent(event.timestamp, self, self.event.source,
+                                RoutingPacket(self.address, 
+                                              routingTable = self.routing_table
+                                              ))]
+
+
+            
         return [PacketEvent(event.timestamp, self,
                             self.getRoute(event.packet.destination),
                             event.packet)]
 
-    def _UpdateRoutingTable(self):
+    def _UpdateRoutingTable(self, event):
         """ Updates the internal routing table.
 
         This method should be the result of an Event that informs
-        the Router to update.
+        the Router to update. Begins bellman ford on all nodes in the graph
         """
         # TODO(choutim) Implement at a later time.
-        pass
+        # request routing table from all neighbors
+        self.neighborRouting = []
+        return [PacketEvent(event.timestamp, self, link, 
+                            RoutingRequestPacket(self.address)) 
+                for link in links]
+        
+
 
     def getRoute(self, destination):
         """checks routing table for route to destination"""
-        return self.routing_table[destination]
+        return self.routing_table[destination][0]
