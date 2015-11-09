@@ -1,0 +1,169 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module icfire.packet</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="icfire.html"><font color="#ffffff">icfire</font></a>.packet</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/Users/timothychou/Documents/CS143/CS_143/icfire/packet.py">/Users/timothychou/Documents/CS143/CS_143/icfire/packet.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="__builtin__.html#object">__builtin__.object</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="icfire.packet.html#Packet">Packet</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="icfire.packet.html#AckPacket">AckPacket</a>
+</font></dt><dt><font face="helvetica, arial"><a href="icfire.packet.html#DataPacket">DataPacket</a>
+</font></dt><dt><font face="helvetica, arial"><a href="icfire.packet.html#RoutingPacket">RoutingPacket</a>
+</font></dt><dt><font face="helvetica, arial"><a href="icfire.packet.html#RoutingRequestPacket">RoutingRequestPacket</a>
+</font></dt></dl>
+</dd>
+</dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="AckPacket">class <strong>AckPacket</strong></a>(<a href="icfire.packet.html#Packet">Packet</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>This&nbsp;class&nbsp;represents&nbsp;an&nbsp;ack&nbsp;packet<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="icfire.packet.html#AckPacket">AckPacket</a></dd>
+<dd><a href="icfire.packet.html#Packet">Packet</a></dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="AckPacket-__init__"><strong>__init__</strong></a>(self, source, dest, index, flowId)</dt></dl>
+
+<hr>
+Data descriptors inherited from <a href="icfire.packet.html#Packet">Packet</a>:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="DataPacket">class <strong>DataPacket</strong></a>(<a href="icfire.packet.html#Packet">Packet</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>This&nbsp;class&nbsp;represents&nbsp;a&nbsp;packet&nbsp;transferring&nbsp;arbitrary&nbsp;data<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="icfire.packet.html#DataPacket">DataPacket</a></dd>
+<dd><a href="icfire.packet.html#Packet">Packet</a></dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="DataPacket-__init__"><strong>__init__</strong></a>(self, source, dest, index, flowId)</dt></dl>
+
+<hr>
+Data descriptors inherited from <a href="icfire.packet.html#Packet">Packet</a>:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Packet">class <strong>Packet</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>This&nbsp;class&nbsp;represents&nbsp;a&nbsp;packet&nbsp;of&nbsp;data<br>
+&nbsp;<br>
+It&nbsp;can&nbsp;be&nbsp;sent&nbsp;between&nbsp;routers&nbsp;and&nbsp;hosts<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Packet-__init__"><strong>__init__</strong></a>(self, source, dest, index, size, ack<font color="#909090">=False</font>, fin<font color="#909090">=False</font>, corrupted<font color="#909090">=False</font>)</dt><dd><tt>:param&nbsp;source:&nbsp;the&nbsp;address:port&nbsp;combination&nbsp;of&nbsp;the&nbsp;packet&nbsp;sender<br>
+:param&nbsp;dest:&nbsp;the&nbsp;address:port&nbsp;combination&nbsp;of&nbsp;the&nbsp;packet&nbsp;recipient<br>
+:param&nbsp;index:&nbsp;packet&nbsp;number,&nbsp;index<br>
+:param&nbsp;size:&nbsp;size&nbsp;of&nbsp;packet&nbsp;in&nbsp;bytes<br>
+:param&nbsp;ack:&nbsp;ACK&nbsp;flag<br>
+:param&nbsp;fin:&nbsp;FIN&nbsp;flag<br>
+:param&nbsp;corrupted:</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="RoutingPacket">class <strong>RoutingPacket</strong></a>(<a href="icfire.packet.html#Packet">Packet</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>This&nbsp;class&nbsp;represents&nbsp;a&nbsp;routing&nbsp;table&nbsp;packet<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="icfire.packet.html#RoutingPacket">RoutingPacket</a></dd>
+<dd><a href="icfire.packet.html#Packet">Packet</a></dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="RoutingPacket-__init__"><strong>__init__</strong></a>(self, source, dest, routingTable<font color="#909090">=None</font>)</dt></dl>
+
+<hr>
+Data descriptors inherited from <a href="icfire.packet.html#Packet">Packet</a>:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="RoutingRequestPacket">class <strong>RoutingRequestPacket</strong></a>(<a href="icfire.packet.html#Packet">Packet</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>This&nbsp;class&nbsp;represents&nbsp;a&nbsp;request&nbsp;for&nbsp;routing&nbsp;table<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="icfire.packet.html#RoutingRequestPacket">RoutingRequestPacket</a></dd>
+<dd><a href="icfire.packet.html#Packet">Packet</a></dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="RoutingRequestPacket-__init__"><strong>__init__</strong></a>(self, source)</dt></dl>
+
+<hr>
+Data descriptors inherited from <a href="icfire.packet.html#Packet">Packet</a>:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table></td></tr></table>
+</body></html>
