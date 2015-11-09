@@ -200,7 +200,8 @@ class Host(Node):
         if isinstance(event.packet, RoutingRequestPacket):
             return [PacketEvent(event.timestamp, self, self.links[0],
                                 RoutingPacket(self.address, event.packet.source,
-                                              routingTable={self.address: [self.address, 0]}))]
+                                              routingTable={self.address: [self.address, 0]}),
+                                'Routing table packet for host %s' % self.address)]
 
         # Packet is ACK, update Flow accordingly
         elif isinstance(event.packet, AckPacket):
@@ -302,7 +303,8 @@ class Router(Node):
             # process request for routing table
             return [PacketEvent(event.timestamp, self, event.sender,
                                 RoutingPacket(self.address, event.packet.source,
-                                              routingTable=self.routing_table))]
+                                              routingTable=self.routing_table),
+                                'Routing table packet for router %s' % self.address)]
 
         # Data packet, forward to correct link
         elif isinstance(event.packet, DataPacket) or isinstance(event.packet, AckPacket):
@@ -337,8 +339,10 @@ class Router(Node):
         the Router to update. Begins bellman ford on all nodes in the graph
         """
         return [PacketEvent(event.timestamp, self, link,
-                            RoutingRequestPacket(self.address))
-                for link in self.links] + [UpdateRoutingTableEvent(event.timestamp + 100, self)]
+                            RoutingRequestPacket(self.address),
+                            'Routing table request packet for router %s' % self.address)
+                for link in self.links] + [UpdateRoutingTableEvent(event.timestamp + 100, self,
+                                                                   'Router %s updates routing table' % self.address)]
 
     def getRoute(self, destination):
         """checks routing table for route to destination"""

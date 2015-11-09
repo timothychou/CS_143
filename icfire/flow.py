@@ -101,7 +101,7 @@ class SuperSimpleFlow2(Flow):
         self.bytes = bytes
         self.flowId = flowId
 
-        self.windowsize = 64
+        self.windowsize = 60
 
         self.acks = [0]
         self.inflight = []
@@ -114,7 +114,8 @@ class SuperSimpleFlow2(Flow):
         """
         assert isinstance(packet, AckPacket)
         self.acks.append(packet.index)
-        self.inflight.remove(packet.index - 1)
+        if packet.index - 1 in self.inflight:
+            self.inflight.remove(packet.index - 1)
         return self.sendPackets()
 
     def sendPackets(self):

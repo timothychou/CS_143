@@ -57,7 +57,7 @@ class EventHandler:
         # Simply raise an Empty exception. This may be changed later.
         event = self._queue.get(block=False)
         # Log each event
-        logger.Log('[%10.3f] %s' % (event.timestamp, event.logMessage))
+        logger.Log('[%10.3f][%15s] %s' % (event.timestamp, event.__class__, event.logMessage))
 
         newevents = event.eventObject.processEvent(event)
         for e in newevents:
@@ -152,8 +152,6 @@ class UpdateRoutingTableEvent(Event):
         :param router: router that needs to update its routing table
         :param logMessage; [optional] string describing the event for logging
         """
-        if not logMessage:
-            logMessage = 'Router %s updates routing table' % router.address
         super(self.__class__, self).__init__(timestamp, router, logMessage)
 
 

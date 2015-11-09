@@ -56,9 +56,9 @@ class Network(object):
 
         if not static_routing:
             # if dynamic routing, create a update routing table event
-            print 'dyanamic routing'
             self.events.append(
-                UpdateRoutingTableEvent(0, self.nodes[newid]))
+                UpdateRoutingTableEvent(0, self.nodes[newid],
+                                        'Router %s updates routing table' % newid))
             # TODO(tangerine) make initial UpdateRoutingTableEvents be saved/loaded
 
         return newid
