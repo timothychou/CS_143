@@ -128,7 +128,7 @@ class Link(NetworkObject):
 
     def cost(self):
         """ cost of going through this edge """
-        return random.random()  # TODO(choutim) fix
+        return self.buffersize * self.delay / self.rate / self.maxbuffersize
 
 
 class Node(NetworkObject):
