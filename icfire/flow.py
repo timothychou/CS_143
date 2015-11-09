@@ -102,7 +102,7 @@ class SuperSimpleFlow2(Flow):
         self.bytes = bytes
         self.flowId = flowId
 
-        self.windowsize = 10
+        self.windowsize = 64
 
         self.acks = [0]
         self.inflight = []

@@ -53,6 +53,7 @@ class Network(object):
 
         if not static_routing:
             # if dynamic routing, create a update routing table event
+            print 'dyanamic routing'
             self.events.append(
                 UpdateRoutingTableEvent(0, self.nodes[newid]))
         

@@ -95,7 +95,7 @@ class Event(object):
         self.eventObject = eventObject
         self.logMessage = logMessage
         if not self.logMessage:
-            self.logMessage = 'An Event took place at %d on object %s' % (timestamp, eventObject)
+            self.logMessage = 'An %s event took place at %d on object %s' % (self.__class__, timestamp, eventObject)
 
         # Keep track of order that Events are created to break ties for timestamps
         self._id = getUniqueEventId()
@@ -122,6 +122,7 @@ class PacketEvent(Event):
         :param packet: actual packet being sent.
         :param logMessage: [optional] string describing the event for logging purposes.
         """
+
         super(self.__class__, self).__init__(timestamp, receiver, logMessage)
         self.sender = sender
         self.packet = packet
@@ -150,6 +151,8 @@ class UpdateRoutingTableEvent(Event):
         :param router: router that needs to update its routing table
         :param logMessage; [optional] string describing the event for logging
         """
+        if not logMessage:
+            logMessage = 'Router %s updates routing table' %router.address
         super(self.__class__, self).__init__(timestamp, router, logMessage)
 
 class LinkTickEvent(Event):

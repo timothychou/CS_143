@@ -1,7 +1,4 @@
-from eventhandler import PacketEvent
-from eventhandler import Event
-from eventhandler import UpdateFlowEvent
-from eventhandler import LinkTickEvent
+from eventhandler import *
 import sys
 from packet import RoutingPacket
 from packet import RoutingRequestPacket
@@ -188,7 +185,6 @@ class Host(Node):
 
         sends back an ack as needed"""
         packet = event.packet
-        assert packet.dest == self.address
 
         # Handle routing table update requests
         if isinstance(event.packet, RoutingRequestPacket):
@@ -198,6 +194,7 @@ class Host(Node):
 
         # Packet is ACK, update Flow accordingly
         elif isinstance(event.packet, AckPacket):
+            assert packet.dest == self.address
             assert packet.flowId in self.flows
             newpackets = self.flows[packet.flowId].receiveAckPacket(packet)
             return [PacketEvent(event.timestamp, self,
@@ -209,6 +206,7 @@ class Host(Node):
 
         # Treat packet as data packet, return appropriate ACK
         elif isinstance(event.packet, DataPacket):
+            assert packet.dest == self.address
             assert packet.flowId in self.flowrecipients
 
             # TODO(choutim) include packet integrity checks, maybe
@@ -292,7 +290,7 @@ class Router(Node):
         # Received routing table request
         elif isinstance(event.packet, RoutingRequestPacket):
             # process request for routing table
-            return [PacketEvent(event.timestamp, self, self.event.source,
+            return [PacketEvent(event.timestamp, self, event.sender,
                                 RoutingPacket(self.address, event.packet.source,
                                               routingTable=self.routing_table))]
 
@@ -309,15 +307,18 @@ class Router(Node):
             raise NotImplementedError(
                 'Handling of %s not implemented' % event.packet.__class__)
 
+        return []
+
     def _processOtherEvent(self, event):
         """ Processes non-packet events """
+
         if isinstance(event, UpdateRoutingTableEvent):
             return self._updateRoutingTable(event)
         else:
             raise NotImplementedError(
                 'Handling of %s not implemented' % event.__class__)
 
-    def _UpdateRoutingTable(self, event):
+    def _updateRoutingTable(self, event):
         """ Updates the internal routing table.
 
         This method should be the result of an Event that informs
@@ -325,7 +326,7 @@ class Router(Node):
         """
         return [PacketEvent(event.timestamp, self, link,
                             RoutingRequestPacket(self.address))
-                for link in self.links] + [UpdatingRoutingTableEvent(event.timestamp + 100, self)]
+                for link in self.links] + [UpdateRoutingTableEvent(event.timestamp + 100, self)]
 
     def getRoute(self, destination):
         """checks routing table for route to destination"""
