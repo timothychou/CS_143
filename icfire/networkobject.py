@@ -299,14 +299,23 @@ class Router(Node):
         # Data packet, forward to correct link
         elif isinstance(event.packet, DataPacket) or isinstance(event.packet, AckPacket):
             nextLink = self.getRoute(event.packet.dest)
-            return [PacketEvent(event.timestamp, self,
-                                nextLink, event.packet,
-                                'Router %s forwards packet to %s' % (self.address, nextLink.id))]
+            if nextLink:
+                return [PacketEvent(event.timestamp, self,
+                                    nextLink, event.packet,
+                                    'Router %s forwards packet to %s' % (self.address, nextLink.id))]
 
         # Else we don't know what to do
         else:
             raise NotImplementedError(
                 'Handling of %s not implemented' % event.packet.__class__)
+
+    def _processOtherEvent(self, event):
+        """ Processes non-packet events """
+        if isinstance(event, UpdateRoutingTableEvent):
+            return self._updateRoutingTable(event)
+        else:
+            raise NotImplementedError(
+                'Handling of %s not implemented' % event.__class__)
 
     def _UpdateRoutingTable(self, event):
         """ Updates the internal routing table.
@@ -314,12 +323,13 @@ class Router(Node):
         This method should be the result of an Event that informs
         the Router to update. Begins bellman ford on all nodes in the graph
         """
-        # TODO(choutim) Implement at a later time.
-        # request routing table from all neighbors
         return [PacketEvent(event.timestamp, self, link,
                             RoutingRequestPacket(self.address))
-                for link in self.links]
+                for link in self.links] + [UpdatingRoutingTableEvent(event.timestamp + 100, self)]
 
     def getRoute(self, destination):
         """checks routing table for route to destination"""
-        return self.routing_table[destination][0]
+        
+        if destination in self.routing_table:
+            return self.routing_table[destination][0]
+        return False

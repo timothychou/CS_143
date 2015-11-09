@@ -33,10 +33,12 @@ class Network(object):
         self.last_flow = 0
     # graph creation functions
 
-    def addRouter(self, node_id=None):
+    def addRouter(self, node_id=None, static_routing=False):
         """ Adds a router to the list of hosts and to the graph representation
 
         :param node_id: (optional) specify a node id to use for this node.
+        :param static_routing (optional) specify whether to use static
+         or dyanmic routing
         :returns: id of router added
         """
         if node_id is not None:
@@ -48,6 +50,12 @@ class Network(object):
             return
         self.G.add_node(newid, host=0)
         self.nodes[newid] = Router(newid, [])
+
+        if not static_routing:
+            # if dynamic routing, create a update routing table event
+            self.events.append(
+                UpdateRoutingTableEvent(0, self.nodes[newid]))
+        
         return newid
 
     def addHost(self, node_id=None):
@@ -66,6 +74,7 @@ class Network(object):
         else:
             self.G.add_node(newid, host=1)
         self.nodes[newid] = Host(newid)
+        
         return newid
 
     def addLink(self, source_id, target_id,

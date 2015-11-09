@@ -141,6 +141,16 @@ class UpdateFlowEvent(Event):
         super(self.__class__, self).__init__(timestamp, host, logMessage)
         self.flowId = flowId
 
+class UpdateRoutingTableEvent(Event):
+    """ Event that tells router to update routing table """
+    def __init__(self, timestamp, router, logMessage=None):
+        """ Constructor for an Event.
+        
+        :param timestamp: time (integer) representing when the Event occurs.
+        :param router: router that needs to update its routing table
+        :param logMessage; [optional] string describing the event for logging
+        """
+        super(self.__class__, self).__init__(timestamp, router, logMessage)
 
 class LinkTickEvent(Event):
     """ Event that tells the Link to send another Packet from its buffer. """
