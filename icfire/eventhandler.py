@@ -168,7 +168,6 @@ class LinkTickEvent(Event):
         super(self.__class__, self).__init__(timestamp, link, logMessage)
 
 
-# global globalid
 globalid = 0
 
 

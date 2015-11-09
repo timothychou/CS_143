@@ -54,4 +54,4 @@ if __name__ == '__main__':
         tc0a.nodes['R4'].routing_table = {'H1': (tc0a.links['L4'], 3),
                                           'H2': (tc0a.links['L5'], 3)}
 
-    EventHandler(tc0a).run(0, 10000)
+    EventHandler(tc0a).run(0, 1000)

@@ -1,5 +1,4 @@
 import sys
-import random
 from packet import RoutingPacket
 from packet import RoutingRequestPacket
 from packet import DataPacket
