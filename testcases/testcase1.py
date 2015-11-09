@@ -1,9 +1,10 @@
 import sys
 import os
-sys.path.append(os.path.dirname(os.getcwd()))
 
 from icfire.network import Network
 from icfire.eventhandler import EventHandler
+
+sys.path.append(os.path.dirname(os.getcwd()))
 
 
 def buildNetwork(static_routing=False):
@@ -33,14 +34,14 @@ def buildNetwork(static_routing=False):
 if __name__ == '__main__':
     filename = 'testcase1.json'
     static_routing = False
-    tc0 = buildNetwork()
+    tc0 = buildNetwork(static_routing)
     # tc0.save(filename)
     # tc0.draw()
 
     # tc0a = Network()
     # tc0a.load(filename)
 
-    tc0a = tc0
+    tc0a = tc0  # todo loading/saving not 100% functional right now
 
     # Set routing tables manually
     if static_routing:
@@ -53,6 +54,4 @@ if __name__ == '__main__':
         tc0a.nodes['R4'].routing_table = {'H1': (tc0a.links['L4'], 3),
                                           'H2': (tc0a.links['L5'], 3)}
 
-
-    eh = EventHandler(tc0a)
-    eh.run(0, 1000)
+    EventHandler(tc0a).run(0, 1000)

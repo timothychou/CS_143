@@ -1,11 +1,12 @@
 """ Unittests for networkobject.py """
 import sys
 import os
-sys.path.append(os.path.dirname(os.getcwd()))
+import unittest
 
 from icfire.networkobject import NetworkObject, Link, Host
 from icfire.eventhandler import Event, PacketEvent
-import unittest
+
+sys.path.append(os.path.dirname(os.getcwd()))
 
 
 class NetworkObjectTest(unittest.TestCase):

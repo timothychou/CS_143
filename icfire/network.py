@@ -4,8 +4,11 @@ from networkx.readwrite import json_graph
 import json
 import flow
 
-from eventhandler import *
-from networkobject import *
+from eventhandler import UpdateRoutingTableEvent
+from eventhandler import UpdateFlowEvent
+from networkobject import Link
+from networkobject import Router
+from networkobject import Host
 
 
 class Network(object):
@@ -37,7 +40,7 @@ class Network(object):
         """ Adds a router to the list of hosts and to the graph representation
 
         :param node_id: (optional) specify a node id to use for this node.
-        :param static_routing (optional) specify whether to use static
+        :param static_routing: (optional) specify whether to use static
          or dyanmic routing
         :returns: id of router added
         """
@@ -56,7 +59,8 @@ class Network(object):
             print 'dyanamic routing'
             self.events.append(
                 UpdateRoutingTableEvent(0, self.nodes[newid]))
-        
+            # TODO(tangerine) make initial UpdateRoutingTableEvents be saved/loaded
+
         return newid
 
     def addHost(self, node_id=None):
@@ -75,7 +79,7 @@ class Network(object):
         else:
             self.G.add_node(newid, host=1)
         self.nodes[newid] = Host(newid)
-        
+
         return newid
 
     def addLink(self, source_id, target_id,
@@ -90,7 +94,7 @@ class Network(object):
         :returns: integer or string key of the link
 
         """
-        if (source_id in self.nodes and target_id in self.nodes):
+        if source_id in self.nodes and target_id in self.nodes:
             # If no linkid is provided, generate a unique
             if linkid is None:
                 linkid = self.getNewLinkId()
@@ -128,7 +132,7 @@ class Network(object):
                 return
             else:
                 newFlowId = self._createFlow(source_id, dest_id, bytes,
-                                            timestamp, flowType)
+                                             timestamp, flowType)
                 eventjson = {
                     'source_id': source_id,
                     'dest_id': dest_id,
@@ -198,7 +202,7 @@ class Network(object):
                 timestamp = flows[i].get('timestamp')
                 flowType = flows[i].get('flowType', 'Flow')
                 self._createFlow(source_id, dest_id, bytes,
-                                timestamp, flowType)
+                                 timestamp, flowType)
 
     def save(self, filename):
         """ Writes the data to file
@@ -217,7 +221,7 @@ class Network(object):
         self.last_node = max(self.G.nodes())
         for node_id in self.G.nodes():
             # generate hosts and routers
-            if (self.G.node[node_id].get('host')):
+            if self.G.node[node_id].get('host'):
                 self.nodes[node_id] = Host(node_id)
             else:
                 self.nodes[node_id] = Router(node_id)
@@ -243,17 +247,17 @@ class Network(object):
         plt.show()
 
     def getNewNodeId(self):
-        while(self.last_node in self.nodes):
+        while self.last_node in self.nodes:
             self.last_node += 1
         return self.last_node
 
     def getNewLinkId(self):
-        while(self.last_link in self.links):
+        while self.last_link in self.links:
             self.last_link += 1
         return self.last_link
 
     def getNewFlowId(self):
-        while(self.last_flow in self.flows):
+        while self.last_flow in self.flows:
             self.last_flow += 1
         return self.last_flow
 

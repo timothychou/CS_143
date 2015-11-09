@@ -1,7 +1,7 @@
 class Packet(object):
-    '''This class represents a packet of data
+    """This class represents a packet of data
 
-    It can be sent between routers and hosts'''
+    It can be sent between routers and hosts"""
 
     def __init__(self, source, dest, index, size,
                  ack=False, fin=False, corrupted=False):
@@ -10,7 +10,7 @@ class Packet(object):
         :param source: the address:port combination of the packet sender
         :param dest: the address:port combination of the packet recipient
         :param index: packet number, index
-        :param flowId: the id of the Flow that this packet belongs to
+        :param size: size of packet in bytes
         :param ack: ACK flag
         :param fin: FIN flag
         :param corrupted:
@@ -33,7 +33,7 @@ class DataPacket(Packet):
         super(self.__class__, self).__init__(source, dest, index, size=1024)
 
         self.flowId = flowId
-        
+
 
 class AckPacket(Packet):
     """ This class represents an ack packet """
@@ -46,7 +46,7 @@ class AckPacket(Packet):
 
 class RoutingPacket(Packet):
     """ This class represents a routing table packet """
-    
+
     def __init__(self, source, dest, routingTable=None):
         super(self.__class__, self).__init__(source, dest, index=None, size=1024)
 

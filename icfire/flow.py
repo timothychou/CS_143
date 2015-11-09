@@ -21,13 +21,12 @@ class Flow(object):
         raise NotImplementedError(
             'Flow class should never be instantiated.')
 
-    def receiveAckPacket(self, packet, time):
+    def receiveAckPacket(self, packet):
         """ Alter the flow state based on the ACK packet received.
 
         Returns a list of new packets to send
 
         :param packet: The ACK packet received
-        :param time: The current time
         :return: A list of new packets
         """
         raise NotImplementedError('This should be overriden by subclass')

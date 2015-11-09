@@ -1,11 +1,15 @@
-from eventhandler import *
 import sys
+import random
 from packet import RoutingPacket
 from packet import RoutingRequestPacket
 from packet import DataPacket
 from packet import AckPacket
+from eventhandler import UpdateRoutingTableEvent
+from eventhandler import UpdateFlowEvent
+from eventhandler import PacketEvent
+from eventhandler import LinkTickEvent
+from eventhandler import Event
 import logger
-import random
 
 
 class NetworkObject(object):
@@ -128,7 +132,7 @@ class Link(NetworkObject):
 
 
 class Node(NetworkObject):
-    """ class that represents a node in a network
+    """ abstract class that represents a node in a network
 
     This class represents a node in a network connected by edges"""
 
@@ -146,6 +150,12 @@ class Node(NetworkObject):
 
     def addLink(self, target):
         self.links.append(target)
+
+    def _processPacketEvent(self, packet_event):
+        raise NotImplementedError('This should be overriden by subclass')
+
+    def _processOtherEvent(self, event):
+        raise NotImplementedError('This should be overriden by subclass')
 
 
 class Host(Node):
@@ -301,6 +311,8 @@ class Router(Node):
                 return [PacketEvent(event.timestamp, self,
                                     nextLink, event.packet,
                                     'Router %s forwards packet to %s' % (self.address, nextLink.id))]
+            else:
+                logger.Log('Router %s dropped packet %s' % (self.address, event.packet.index))
 
         # Else we don't know what to do
         else:
@@ -330,7 +342,7 @@ class Router(Node):
 
     def getRoute(self, destination):
         """checks routing table for route to destination"""
-        
+
         if destination in self.routing_table:
             return self.routing_table[destination][0]
-        return False
+        return None
