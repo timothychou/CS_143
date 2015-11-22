@@ -1,5 +1,5 @@
-from eventhandler import PacketEvent
-from eventhandler import Event
+from icfire.event import PacketEvent
+from icfire.event import Event
 
 
 class NetworkObject(object):
@@ -24,6 +24,34 @@ class NetworkObject(object):
             return self._processOtherEvent(event)
         else:
             raise AssertionError('process event should only be given an event')
+
+    def _processPacketEvent(self, packet_event):
+        raise NotImplementedError('This should be overriden by subclass')
+
+    def _processOtherEvent(self, event):
+        raise NotImplementedError('This should be overriden by subclass')
+
+
+class Node(NetworkObject):
+
+    """ abstract class that represents a node in a network
+
+    This class represents a node in a network connected by edges"""
+
+    def __init__(self, address, links=None):
+        """ Constructor for Node
+
+        :param address: unique address of this Node
+        :param links: list of Links (objects) this Node is connected to
+        """
+        self.address = address
+        if not links:
+            self.links = []
+        else:
+            self.links = links
+
+    def addLink(self, target):
+        self.links.append(target)
 
     def _processPacketEvent(self, packet_event):
         raise NotImplementedError('This should be overriden by subclass')

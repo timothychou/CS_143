@@ -1,7 +1,7 @@
-from networkobject import *
-from packet import *
-from eventhandler import *
-import logger
+from icfire.networkobjects.networkobject import NetworkObject
+from icfire.packet import *
+from icfire.eventhandler import *
+from icfire import logger
 
 
 class Link(NetworkObject):

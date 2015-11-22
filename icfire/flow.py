@@ -1,5 +1,5 @@
-from packet import AckPacket
-from packet import DataPacket
+from icfire.packet import AckPacket
+from icfire.packet import DataPacket
 
 
 class Flow(object):

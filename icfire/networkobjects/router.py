@@ -1,8 +1,8 @@
 import sys
-from networkobject import * 
-from packet import *
-from eventhandler import *
-import logger
+from icfire.networkobjects.networkobject import Node
+from icfire.packet import *
+from icfire.eventhandler import *
+from icfire import logger
 
 
 class Router(Node):

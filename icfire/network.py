@@ -2,13 +2,13 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from networkx.readwrite import json_graph
 import json
-import flow
 
-from eventhandler import UpdateRoutingTableEvent
-from eventhandler import UpdateFlowEvent
-from networkobject import Link
-from networkobject import Router
-from networkobject import Host
+import icfire.flow as flow
+from icfire.event import UpdateRoutingTableEvent
+from icfire.event import UpdateFlowEvent
+from icfire.networkobjects.link import Link
+from icfire.networkobjects.router import Router
+from icfire.networkobjects.host import Host
 
 
 class Network(object):
