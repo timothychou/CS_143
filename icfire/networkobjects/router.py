@@ -1,7 +1,7 @@
 import sys
+from icfire.event import PacketEvent, UpdateRoutingTableEvent
 from icfire.networkobjects.networkobject import Node
-from icfire.packet import *
-from icfire.eventhandler import *
+from icfire.packet import RoutingPacket, RoutingRequestPacket, DataPacket, AckPacket
 from icfire import logger
 
 

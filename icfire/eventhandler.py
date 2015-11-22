@@ -22,10 +22,8 @@ processEvent() should also return a list of new Events to enqueue.
 """
 
 from Queue import PriorityQueue
-from Queue import Empty
-import time
+from tqdm import trange
 import icfire.logger as logger
-from icfire.event import *
 
 
 class EventHandler:
@@ -61,12 +59,15 @@ class EventHandler:
         # When we get an object from the queue, do not block if empty.
         # Simply raise an Empty exception. This may be changed later.
         event = self._queue.get(block=False)
-        if realtime:
-            waittime = event.timestamp - self.time
-            if waittime < 0:
-                logger.Log("Error: events are not occuring in order")
-            # wait for a maximum of 5 seconds
-            time.sleep((waittime / 1000 / slowdown) % 5)
+
+        # TODO disabled for now
+        # if realtime:
+        #     waittime = event.timestamp - self.time
+        #     if waittime < 0:
+        #         logger.Log("Error: events are not occuring in order")
+        #     # wait for a maximum of 5 seconds
+        #     time.sleep((waittime / 1000 / slowdown) % 5)
+
         # Log each event
         logger.Log('[%10.3f][%15s] %s' %
                    (event.timestamp, event.__class__, event.logMessage))
@@ -77,24 +78,17 @@ class EventHandler:
         self.time = event.timestamp
         return event
 
-    def run(self, steps=0, realtime=False, slowdown=1):
+    def run(self, steps=0):
         """
         :param steps: [optional] Maximum number of steps to take.
             If 0, the simulation runs until completion.
-        :param realtime: [optional] Set to true to simulate in real time
-        :param slowdown: [optional] factor to slow down the simulation.
-            Half the simulation rate with a slowdon of .5
         :return:
         """
 
         # If interval is 0 we branch and to avoid calling time.sleep(0)
         if steps == 0:
-            while(not self._queue.Empty()):
-                self.step(realtime, slowdown)
+            while not self._queue.Empty():
+                self.step()
         else:
-            for i in xrange(steps):
-                try:
-                    self.step(realtime, slowdown)
-                except Empty:
-                    break
-
+            for _ in trange(steps):
+                self.step()

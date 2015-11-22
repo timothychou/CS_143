@@ -26,15 +26,14 @@ def buildNetwork(static_routing=False):
     tc0.addLink(r3, r4, rate=10, delay=10, buffsize=64, linkid='L4')
     tc0.addLink(r4, h2, rate=12.5, delay=10, buffsize=64, linkid='L5')
     # tc0.addFlow(h1, h2, bytes=20000000, timestamp=500, flowType='SuperSimpleFlow')
-    tc0.addFlow(
-        h1, h2, bytes=20000000, timestamp=500, flowType='SuperSimpleFlow2')
+    tc0.addFlow(h1, h2, bytes=20000000, timestamp=500, flowType='TCPRenoFlow')
 
     return tc0
 
 
 if __name__ == '__main__':
     filename = 'testcase1.json'
-    static_routing = False
+    static_routing = True
     tc0 = buildNetwork(static_routing)
     # tc0.save(filename)
     # tc0.draw()
@@ -55,4 +54,4 @@ if __name__ == '__main__':
         tc0a.nodes['R4'].routing_table = {'H1': (tc0a.links['L4'], 3),
                                           'H2': (tc0a.links['L5'], 3)}
 
-    EventHandler(tc0a).run(1000, True, .1)
+    EventHandler(tc0a).run(1000000)

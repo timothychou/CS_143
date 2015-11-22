@@ -137,6 +137,102 @@ class SuperSimpleFlow2(Flow):
         return newpackets
 
 
+class TCPRenoFlow(Flow):
+    """ TCP Reno """
+
+    def __init__(self, source_id, dest_id, bytes, flowId):
+        """ Create a new Flow
+
+        :param source_id: address of the flow sender (owner of this Flow)
+        :param dest_id: dest address of the other host
+        :param bytes: bytes to send (0 for continuous)
+        :param flowId: id of the flow
+        """
+        self.source_id = source_id
+        self.dest_id = dest_id
+        self.bytes = bytes
+        self.flowId = flowId
+
+        self.lastAck = 0
+        self.numLastAck = 1
+        self.nextSend = 0       # Packet number of next packet to send
+
+        # TCP Reno specific
+        self.ssthresh = 64
+        self.cwnd = 1
+        self.canum = 0
+        self.fastrecovery = False
+
+    def receiveAckPacket(self, packet):
+        """ A new ACK number means that the next packet can be sent.
+
+        :param packet: The AckPacket received
+        :return: A list of new packets
+        """
+        assert isinstance(packet, AckPacket)
+
+        resend = []
+
+        # Duplicate ACK
+        if packet.index == self.lastAck:
+            # logger.Log('ayylmao DUPLICATE ACK!!!!!!')
+            # logger.Log('%d' % self.ssthresh)
+
+            self.numLastAck += 1
+
+            # Fast Retransmit/Fast Recovery
+            # http://www.isi.edu/nsnam/DIRECTED_RESEARCH/DR_WANIDA/DR/JavisInActionFastRecoveryFrame.html
+            if self.numLastAck == 4:
+                self.ssthresh = max(self.cwnd/2, 2)
+                resend = [DataPacket(self.source_id, self.dest_id,
+                                     self.lastAck, self.flowId)]
+                self.cwnd = self.ssthresh + 3
+                self.canum = 0
+
+                self.fastrecovery = True
+            elif self.numLastAck > 4:
+                self.cwnd += 1
+                self.canum = 0
+
+        # New ACK
+        elif packet.index > self.lastAck:
+            self.lastAck = packet.index
+            self.numLastAck = 1
+
+            # Exit fast recovery
+            if self.fastrecovery:
+                self.cwnd = self.ssthresh
+                self.canum = 0
+                self.fastrecovery = False
+
+            # Slow start
+            if self.cwnd < self.ssthresh:
+                self.cwnd += 1
+                self.canum = 0
+
+            # Congestion avoidance
+            else:
+                self.canum += 1
+                if self.canum == self.cwnd:
+                    self.cwnd += 1
+                    self.canum = 0
+
+        return resend + self.sendPackets()
+
+    def sendPackets(self):
+        """ Send packets if window size allows it
+
+        :return: A list of new packets
+        """
+
+        newpackets = [DataPacket(self.source_id, self.dest_id, ind, self.flowId)
+                      for ind in range(self.nextSend, self.lastAck + self.cwnd)]
+
+        self.nextSend = max(self.nextSend, self.lastAck + self.cwnd)
+
+        return newpackets
+
+
 class FlowRecipient(object):
 
     """ Class for the Flow recipient to manage the Flow. """

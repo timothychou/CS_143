@@ -1,7 +1,6 @@
+from icfire.event import PacketEvent, UpdateFlowEvent
 from icfire.networkobjects.networkobject import Node
-from icfire.packet import *
-from icfire.eventhandler import *
-from icfire import logger
+from icfire.packet import RoutingPacket, RoutingRequestPacket, AckPacket, DataPacket
 
 
 class Host(Node):

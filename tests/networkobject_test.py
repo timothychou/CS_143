@@ -2,9 +2,10 @@
 import sys
 import os
 import unittest
-
-from icfire.networkobject import NetworkObject, Link, Host
-from icfire.eventhandler import Event, PacketEvent
+from icfire.networkobjects.host import Host
+from icfire.networkobjects.networkobject import NetworkObject
+from icfire.networkobjects.link import Link
+from icfire.event import Event, PacketEvent
 
 sys.path.append(os.path.dirname(os.getcwd()))
 

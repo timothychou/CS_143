@@ -1,2 +1,5 @@
+
+f = open('out4.txt', 'w')
 def Log(logMessage):
-    print logMessage
+    f.write(logMessage + '\n')
+    # pass

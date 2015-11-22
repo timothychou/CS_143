@@ -1,11 +1,10 @@
+from icfire.event import LinkTickEvent, PacketEvent
 from icfire.networkobjects.networkobject import NetworkObject
-from icfire.packet import *
-from icfire.eventhandler import *
 from icfire import logger
+from Queue import Queue
 
 
 class Link(NetworkObject):
-
     """Represents link in a network
 
     This class represents a link in a network that packets can travel
@@ -18,7 +17,7 @@ class Link(NetworkObject):
         :param nodeB: Node that it is connected to (object)
         :param rate: rate (mbps) that this Link can send
         :param delay: time (ms) for a packet to propagate
-        :param maxbuffersize: maximum buffer size (combined for both sides)
+        :param maxbuffersize: maximum buffer size (combined for both sides) (KB)
         :param linkid: id of the Link
         """
         self.nodeA = nodeA
@@ -28,23 +27,33 @@ class Link(NetworkObject):
         self.maxbuffersize = maxbuffersize
         self.id = linkid
 
-        self.buffer = [None] * maxbuffersize  # Queue using a cyclic array
-        self.bufferindex = 0  # index of the front PacketEvent
-        self.buffersize = 0  # number of items in the buffer
+        self.buffer = Queue()  # Queue using a cyclic array
+        self.buffersizeA = 0   # size of items in the buffer for node A
+        self.buffersizeB = 0   # size of items in the buffer for node B
+
+        self.freeAt = 0
 
     def _processPacketEvent(self, packet_event):
         """Processes packet events, storing them in the buffer."""
-        if self.buffersize == self.maxbuffersize:
-            logger.Log('Dropping packet...')
-            return
+        if packet_event.sender == self.nodeA:
+            if self.buffersizeA + packet_event.packet.size > self.maxbuffersize * 1024:
+                logger.Log('Dropping packet... %s' % packet_event.packet.index)
+                return []
 
-        nextopen = (self.bufferindex + self.buffersize) % self.maxbuffersize
-        self.buffer[nextopen] = packet_event
-        self.buffersize += 1
+            self.buffer.put(packet_event)
+            self.buffersizeA += packet_event.packet.size
+        else:
+            assert packet_event.sender == self.nodeB
+            if self.buffersizeB + packet_event.packet.size > self.maxbuffersize * 1024:
+                logger.Log('Dropping packet... %s' % packet_event.packet.index)
+                return []
+
+            self.buffer.put(packet_event)
+            self.buffersizeB += packet_event.packet.size
 
         # If this is the first packet in the buffer, start the LinkTickEvents
-        if self.buffersize == 1:
-            return [LinkTickEvent(packet_event.timestamp, self,
+        if self.buffer.qsize() == 1:
+            return [LinkTickEvent(max(packet_event.timestamp, self.freeAt), self,
                                   'Link ' + self.id + ' processes a packet')]
         return []
 
@@ -54,15 +63,19 @@ class Link(NetworkObject):
         Also possibly generates a new LinkTickEvent if there are more packets
         in the buffer.
         """
-        packet_event = self.buffer[self.bufferindex]
-        self.bufferindex = (self.bufferindex + 1) % self.maxbuffersize
-        self.buffersize -= 1
+        packet_event = self.buffer.get()
+        if packet_event.sender == self.nodeA:
+            self.buffersizeA -= packet_event.packet.size
+        else:
+            assert packet_event.sender == self.nodeB
+            self.buffersizeB -= packet_event.packet.size
 
         # Generate a new PacketEvent
         # Use event.timestamp because this is when the packet is actually
         # forwarded, not the PacketEvent time
         otherNode = self._otherNode(packet_event.sender)
-        newevents = [PacketEvent(event.timestamp + self.delay,
+        tick = packet_event.packet.size * 8.0 / self.rate / 1024 / 1024 * 1000
+        newevents = [PacketEvent(event.timestamp + self.delay + tick,
                                  self, otherNode, packet_event.packet,
                                  'Node %s receives packet %s from link %s' %
                                  (otherNode.address,
@@ -70,10 +83,9 @@ class Link(NetworkObject):
                                   self.id))]
 
         # Make a new LinkTickEvent
-        if self.buffersize:
-            nexTickTime = event.timestamp + \
-                packet_event.packet.size * 8.0 / self.rate / 1024 / 1024 * 1000
-            newevents.append(LinkTickEvent(nexTickTime, self,
+        self.freeAt = event.timestamp + tick
+        if self.buffer.qsize():
+            newevents.append(LinkTickEvent(self.freeAt, self,
                                            'Link %s processes a packet' % self.id))
 
         return newevents
