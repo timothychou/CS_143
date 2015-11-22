@@ -1,15 +1,15 @@
 import sys
 import os
 
+sys.path.append(os.path.dirname(os.getcwd()))
+
 from icfire.network import Network
 from icfire.eventhandler import EventHandler
 
-sys.path.append(os.path.dirname(os.getcwd()))
-
 
 def buildNetwork(static_routing=False):
-    """ This function builds the network for the test case 
-    
+    """ This function builds the network for the test case
+
     :param static_routing whether to use dyanamic or static routing table
     """
     tc0 = Network()
@@ -26,7 +26,8 @@ def buildNetwork(static_routing=False):
     tc0.addLink(r3, r4, rate=10, delay=10, buffsize=64, linkid='L4')
     tc0.addLink(r4, h2, rate=12.5, delay=10, buffsize=64, linkid='L5')
     # tc0.addFlow(h1, h2, bytes=20000000, timestamp=500, flowType='SuperSimpleFlow')
-    tc0.addFlow(h1, h2, bytes=20000000, timestamp=500, flowType='SuperSimpleFlow2')
+    tc0.addFlow(
+        h1, h2, bytes=20000000, timestamp=500, flowType='SuperSimpleFlow2')
 
     return tc0
 
