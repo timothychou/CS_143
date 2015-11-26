@@ -26,7 +26,8 @@ class Router(Node):
         # dict with destination address as key
         # values are 2-tuples (link object, distance)
         self.routing_table = dict()
-
+        # dict with link object as key, list of dest addresses as values
+        self.lookup_table = dict()
         # The routing table should either have a default starting state, or
         # _UpdateRoutingTable should be called once. Otherwise, the Router
         # will not be able to forward anything at all.
@@ -43,10 +44,20 @@ class Router(Node):
             neighborTable = event.packet.routingTable
             link = event.sender
             cost = link.cost()
+            # overwrite parts of routing table that use neighbor 
+            # where neighbor changed
+            for dest in self.lookup_table[link]:
+                self.routing_table[dest] = [link, 
+                                            neighborTable[dest][1] + cost]
+            
+            # update new mins
+            for dest, val in neighborTable.iteritems():
+                if self.routing_table.get(dest, [0, sys.maxint])[1] > (val[1] + cost):
+                    self.lookup_table[self.routing_table[dest][0]].remove(dest)
+                    self.routing_table[dest] = [link, val[1] + cost]
+                    self.lookup_table[link].append(dest)
 
-            for key, val in neighborTable.iteritems():
-                if self.routing_table.get(key, [0, sys.maxint])[1] > (val[1] + cost):
-                    self.routing_table[key] = [link, val[1] + cost]
+
 
         # Received routing table request
         elif isinstance(event.packet, RoutingRequestPacket):
