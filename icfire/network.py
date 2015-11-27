@@ -313,7 +313,7 @@ class Network(object):
             self.data['%s-buf' % l].append(self.links[l].buffersize)
 
     def graph(self):
-        # plot.plotShit([(['title', 'x', 'y'], self.times, self.data['%s-cwnd' % f]) for f in self.flows], False)
+        plot.plotShit([(['%s-cwnd' % f, 'time (ms)', 'window (packets)'], self.times, self.data['%s-cwnd' % f]) for f in self.flows], False)
         plot.plotShit([(['%s-buf' % l, 'time (ms)', 'buffer (bytes)'],
                         self.times,
                         self.data['%s-buf' % l])

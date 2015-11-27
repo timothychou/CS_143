@@ -6,7 +6,6 @@ f3 = open('route4.txt', 'w')
 
 def log(msg):
     f.write(msg + '\n')
-    # pass
 
 
 def log2(msg):

@@ -1,6 +1,7 @@
 from icfire.event import PacketEvent, UpdateFlowEvent
 from icfire.networkobjects.networkobject import Node
 from icfire.packet import RoutingPacket, RoutingRequestPacket, AckPacket, DataPacket
+from icfire import logger
 
 
 class Host(Node):
@@ -43,22 +44,22 @@ class Host(Node):
 
         # Handle routing table update requests
         if isinstance(event.packet, RoutingRequestPacket):
-            return [PacketEvent(event.timestamp, self, self.links[0],
-                                RoutingPacket(self.address, event.packet.source,
-                                              routingTable={self.address: [self.address, 0]}),
-                                'Routing table packet for host %s' % self.address)]
+            logger.log('Routing table packet for host %s' % self.address)
+            return self.links[0].addPackets(
+                [RoutingPacket(self.address, event.packet.source,
+                               routingTable={self.address: [self.address, 0]})], self)
 
         # Packet is ACK, update Flow accordingly
         elif isinstance(event.packet, AckPacket):
             assert packet.dest == self.address
             assert packet.flowId in self.flows
+
             newpackets = self.flows[packet.flowId].receiveAckPacket(packet)
-            return [PacketEvent(event.timestamp, self,
-                                self.links[0], p,
-                                'Flow %s, packet %s from host %s to link %s' %
-                                (p.flowId, p.index,
-                                 self.address, self.links[0].id))
-                    for p in newpackets]
+            for p in newpackets:
+                logger.log('Flow %s, packet %s from host %s to link %s' %
+                           (p.flowId, p.index,
+                            self.address, self.links[0].id))
+            return self.links[0].addPackets(newpackets, self)
 
         # Treat packet as data packet, return appropriate ACK
         elif isinstance(event.packet, DataPacket):
@@ -69,11 +70,10 @@ class Host(Node):
 
             newPacket = self.flowrecipients[
                 packet.flowId].receiveDataPacket(packet)
-            return [PacketEvent(event.timestamp, self,
-                                self.links[0], newPacket,
-                                'ACK %s for flow %s from host %s to link %s' %
-                                (newPacket.index, newPacket.flowId,
-                                 self.address, self.links[0].id))]
+            logger.log('ACK %s for flow %s from host %s to link %s' %
+                       (newPacket.index, newPacket.flowId,
+                        self.address, self.links[0].id))
+            return self.links[0].addPackets([newPacket], self)
 
         # Else we don't know what to do
         else:
@@ -98,4 +98,4 @@ class Host(Node):
                             'Flow %s, packet %s from host %s to link %s' %
                             (f.flowId, p.index, self.address, self.links[0].id))
                 for p in newpackets] + [UpdateFlowEvent(t + rto, self, f.flowId,
-                                        'Check for timeout on flow %s' % f.flowId)]
+                                                        'Check for timeout on flow %s' % f.flowId)]

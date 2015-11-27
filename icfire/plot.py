@@ -26,7 +26,8 @@ def plotShit(data, sameFigure=False):
             _plotOne(data[i])
 
         plt.show()
-                         
+
+
 def _plotOne(datum):
     """ plots a single plot
 

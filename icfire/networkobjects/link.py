@@ -33,13 +33,37 @@ class Link(NetworkObject):
 
         self.freeAt = 0
 
+    def addPackets(self, packets, sender):
+        """ Add packets and return new Events if any.
+
+        A shortcut for sending PacketEvents and having them go through the EventHandler
+
+        :param packets: new packets to add
+        :return: new Events
+        """
+        newevents = []
+
+        # If this is the first packet in the buffer, start the LinkTickEvents
+        if self.buffer.qsize() == 0 and len(packets) > 0:
+            newevents = [LinkTickEvent(max(timer.time, self.freeAt), self,
+                                       'Link ' + self.id + ' processes a packet')]
+
+        for p in packets:
+            if self.buffersize + p.size > self.maxbuffersize:
+                logger.log('Dropping packet... %s' % p.index)
+                break
+            self.buffer.put((p, sender))
+            self.buffersize += p.size
+
+        return newevents
+
     def _processPacketEvent(self, packet_event):
         """Processes packet events, storing them in the buffer."""
         if self.buffersize + packet_event.packet.size > self.maxbuffersize:
             logger.log('Dropping packet... %s' % packet_event.packet.index)
             return []
 
-        self.buffer.put(packet_event)
+        self.buffer.put((packet_event.packet, packet_event.sender))
         self.buffersize += packet_event.packet.size
 
         # If this is the first packet in the buffer, start the LinkTickEvents
@@ -54,25 +78,19 @@ class Link(NetworkObject):
         Also possibly generates a new LinkTickEvent if there are more packets
         in the buffer.
         """
-        packet_event = self.buffer.get()
-        self.buffersize -= packet_event.packet.size
+        packet, sender = self.buffer.get()
+        self.buffersize -= packet.size
 
         # Generate a new PacketEvent
         # Use event.timestamp because this is when the packet is actually
         # forwarded, not the PacketEvent time
-        otherNode = self._otherNode(packet_event.sender)
-        tick = packet_event.packet.size * 8.0 / self.rate / 1024 / 1024 * 1000
-        if packet_event.packet.ack:
-            newevents = [PacketEvent(event.timestamp + self.delay + tick,
-                                     self, otherNode, packet_event.packet,
-                                     'Node %s receives ACK %s from link %s' %
-                                     (otherNode.address, packet_event.packet.index, self.id))]
-        else:
-            newevents = [PacketEvent(event.timestamp + self.delay + tick,
-                                     self, otherNode, packet_event.packet,
-                                     'Node %s receives packet %s from link %s' %
-                                     (otherNode.address, packet_event.packet.index, self.id))]
-
+        otherNode = self._otherNode(sender)
+        tick = 125.0 / 16384 * packet.size / self.rate
+        type = 'ACK' if packet.ack else 'packet'
+        newevents = [PacketEvent(event.timestamp + self.delay + tick,
+                                 self, otherNode, packet,
+                                 'Node %s receives %s %s from link %s' %
+                                 (otherNode.address, type, packet.index, self.id))]
 
         # Make a new LinkTickEvent
         self.freeAt = event.timestamp + tick
@@ -96,4 +114,4 @@ class Link(NetworkObject):
 
     def cost(self):
         """ cost of going through this edge """
-        return self.delay + self.buffersize * 8.0 / self.rate / 1024 / 1024 * 1000
+        return self.delay + 125.0 / 16384 * self.buffersize / self.rate

@@ -43,9 +43,8 @@ class Router(Node):
         if isinstance(event.packet, DataPacket) or isinstance(event.packet, AckPacket):
             nextLink = self.getRoute(event.packet.dest)
             if nextLink:
-                return [PacketEvent(event.timestamp, self,
-                                    nextLink, event.packet,
-                                    'Router %s forwards packet to %s' % (self.address, nextLink.id))]
+                logger.log('Router %s forwards packet to %s' % (self.address, nextLink.id))
+                return nextLink.addPackets([event.packet], self)
             else:
                 logger.log('Router %s dropped packet %s' % (self.address, event.packet.index))
 
@@ -74,10 +73,10 @@ class Router(Node):
         # Received routing table request
         elif isinstance(event.packet, RoutingRequestPacket):
             # process request for routing table
-            return [PacketEvent(event.timestamp, self, event.sender,
-                                RoutingPacket(self.address, event.packet.source,
-                                              routingTable=self.routing_table),
-                                'Routing table packet for router %s' % self.address)]
+            logger.log('Routing table packet for router %s' % self.address)
+            return event.sender.addPackets(
+                [RoutingPacket(self.address, event.packet.source,
+                               routingTable=self.routing_table)], self)
 
         # Else we don't know what to do
         else:
