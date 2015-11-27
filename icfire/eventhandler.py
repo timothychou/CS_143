@@ -24,7 +24,7 @@ processEvent() should also return a list of new Events to enqueue.
 from Queue import PriorityQueue
 from tqdm import trange
 import icfire.logger as logger
-
+import icfire.timer as timer
 
 class EventHandler:
 
@@ -59,6 +59,7 @@ class EventHandler:
         # When we get an object from the queue, do not block if empty.
         # Simply raise an Empty exception. This may be changed later.
         event = self._queue.get(block=False)
+        timer.time = event.timestamp
 
         # TODO disabled for now
         # if realtime:
@@ -69,7 +70,7 @@ class EventHandler:
         #     time.sleep((waittime / 1000 / slowdown) % 5)
 
         # Log each event
-        logger.Log('[%10.3f][%15s] %s' %
+        logger.log('[%10.3f][%15s] %s' %
                    (event.timestamp, event.__class__, event.logMessage))
 
         newevents = event.eventObject.processEvent(event)

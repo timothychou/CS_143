@@ -2,6 +2,7 @@ from icfire.event import LinkTickEvent, PacketEvent
 from icfire.networkobjects.networkobject import NetworkObject
 from icfire import logger
 from Queue import Queue
+import icfire.timer as timer
 
 
 class Link(NetworkObject):
@@ -24,32 +25,22 @@ class Link(NetworkObject):
         self.nodeB = nodeB
         self.rate = rate
         self.delay = delay
-        self.maxbuffersize = maxbuffersize
+        self.maxbuffersize = maxbuffersize * 1024
         self.id = linkid
 
         self.buffer = Queue()  # Queue using a cyclic array
-        self.buffersizeA = 0   # size of items in the buffer for node A
-        self.buffersizeB = 0   # size of items in the buffer for node B
+        self.buffersize = 0    # size of items in the buffer, bytes
 
         self.freeAt = 0
 
     def _processPacketEvent(self, packet_event):
         """Processes packet events, storing them in the buffer."""
-        if packet_event.sender == self.nodeA:
-            if self.buffersizeA + packet_event.packet.size > self.maxbuffersize * 1024:
-                logger.Log('Dropping packet... %s' % packet_event.packet.index)
-                return []
+        if self.buffersize + packet_event.packet.size > self.maxbuffersize:
+            logger.log('Dropping packet... %s' % packet_event.packet.index)
+            return []
 
-            self.buffer.put(packet_event)
-            self.buffersizeA += packet_event.packet.size
-        else:
-            assert packet_event.sender == self.nodeB
-            if self.buffersizeB + packet_event.packet.size > self.maxbuffersize * 1024:
-                logger.Log('Dropping packet... %s' % packet_event.packet.index)
-                return []
-
-            self.buffer.put(packet_event)
-            self.buffersizeB += packet_event.packet.size
+        self.buffer.put(packet_event)
+        self.buffersize += packet_event.packet.size
 
         # If this is the first packet in the buffer, start the LinkTickEvents
         if self.buffer.qsize() == 1:
@@ -64,23 +55,24 @@ class Link(NetworkObject):
         in the buffer.
         """
         packet_event = self.buffer.get()
-        if packet_event.sender == self.nodeA:
-            self.buffersizeA -= packet_event.packet.size
-        else:
-            assert packet_event.sender == self.nodeB
-            self.buffersizeB -= packet_event.packet.size
+        self.buffersize -= packet_event.packet.size
 
         # Generate a new PacketEvent
         # Use event.timestamp because this is when the packet is actually
         # forwarded, not the PacketEvent time
         otherNode = self._otherNode(packet_event.sender)
         tick = packet_event.packet.size * 8.0 / self.rate / 1024 / 1024 * 1000
-        newevents = [PacketEvent(event.timestamp + self.delay + tick,
-                                 self, otherNode, packet_event.packet,
-                                 'Node %s receives packet %s from link %s' %
-                                 (otherNode.address,
-                                  packet_event.packet.index,
-                                  self.id))]
+        if packet_event.packet.ack:
+            newevents = [PacketEvent(event.timestamp + self.delay + tick,
+                                     self, otherNode, packet_event.packet,
+                                     'Node %s receives ACK %s from link %s' %
+                                     (otherNode.address, packet_event.packet.index, self.id))]
+        else:
+            newevents = [PacketEvent(event.timestamp + self.delay + tick,
+                                     self, otherNode, packet_event.packet,
+                                     'Node %s receives packet %s from link %s' %
+                                     (otherNode.address, packet_event.packet.index, self.id))]
+
 
         # Make a new LinkTickEvent
         self.freeAt = event.timestamp + tick
@@ -104,4 +96,4 @@ class Link(NetworkObject):
 
     def cost(self):
         """ cost of going through this edge """
-        return self.buffersize * self.delay / self.rate / self.maxbuffersize
+        return self.delay + self.buffersize * 8.0 / self.rate / 1024 / 1024 * 1000

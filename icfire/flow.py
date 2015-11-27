@@ -1,5 +1,7 @@
 from icfire.packet import AckPacket
 from icfire.packet import DataPacket
+import icfire.timer as timer
+import logger
 
 
 class Flow(object):
@@ -35,6 +37,12 @@ class Flow(object):
         """ Try to send packets to send based on the current state of the Flow
 
         :return: A list of new packets
+        """
+        raise NotImplementedError('This should be overriden by subclass')
+
+    def checkTimeout(self):
+        """ Check timeout status of the flow.
+        :return: A tuple of (list of new packets, new timeout)
         """
         raise NotImplementedError('This should be overriden by subclass')
 
@@ -148,20 +156,38 @@ class TCPRenoFlow(Flow):
         :param bytes: bytes to send (0 for continuous)
         :param flowId: id of the flow
         """
+
+        # General flow info
         self.source_id = source_id
         self.dest_id = dest_id
         self.bytes = bytes
         self.flowId = flowId
 
+        # Flow status
         self.lastAck = 0
         self.numLastAck = 1
         self.nextSend = 0       # Packet number of next packet to send
 
-        # TCP Reno specific
-        self.ssthresh = 64
+        # TCP Reno specific (FRT/FR)
+        self.ssthresh = 200
         self.cwnd = 1
         self.canum = 0
         self.fastrecovery = False
+        self.maxwnd = -1
+
+        # RTT calculator
+        self.srtt = 3000       # Default RTT is 3s
+        self.alpha = 0.9
+        self.inflight = {}
+        self.lastRepSent = 0
+
+        # Timeout
+        self.rto = 60000        # Default 60s
+        self.ubound = 60000     # Upper bound 60s
+        self.lbound = 1000      # Lower bound 1s
+        self.beta = 1.5
+        self.active = True
+        self.nextTimeout = 0
 
     def receiveAckPacket(self, packet):
         """ A new ACK number means that the next packet can be sent.
@@ -170,14 +196,14 @@ class TCPRenoFlow(Flow):
         :return: A list of new packets
         """
         assert isinstance(packet, AckPacket)
-
+        self.active = True
         resend = []
+
+        # jank plotting purposes
+        # logger.log2('%s\t%s\t%s\t%s' % (timer.time, self.cwnd, self.ssthresh, self.srrt))
 
         # Duplicate ACK
         if packet.index == self.lastAck:
-            # logger.Log('ayylmao DUPLICATE ACK!!!!!!')
-            # logger.Log('%d' % self.ssthresh)
-
             self.numLastAck += 1
 
             # Fast Retransmit/Fast Recovery
@@ -190,13 +216,26 @@ class TCPRenoFlow(Flow):
                 self.canum = 0
 
                 self.fastrecovery = True
+                self.maxwnd = self.cwnd*2
+                self.lastRepSent = max(self.lastRepSent, self.nextSend)
+            elif self.fastrecovery and self.numLastAck > self.maxwnd:
+                # Timed out.
+                self._timeout()
             elif self.numLastAck > 4:
                 self.cwnd += 1
                 self.canum = 0
 
         # New ACK
         elif packet.index > self.lastAck:
+            if packet.index - 1 > self.lastRepSent and not self.inflight[packet.index-1][1]:
+                rtt = timer.time - self.inflight[packet.index-1][0]
+                self.srtt = self.alpha * self.srtt + (1-self.alpha) * rtt
+
+            for i in range(self.lastAck, packet.index):
+                self.inflight.pop(i)
+
             self.lastAck = packet.index
+            self.nextSend = max(self.nextSend, self.lastAck)
             self.numLastAck = 1
 
             # Exit fast recovery
@@ -228,9 +267,42 @@ class TCPRenoFlow(Flow):
         newpackets = [DataPacket(self.source_id, self.dest_id, ind, self.flowId)
                       for ind in range(self.nextSend, self.lastAck + self.cwnd)]
 
+        # Set sent time for RTT calcs
+        for p in newpackets:
+            self.inflight[p.index] = (timer.time, p.index in self.inflight)
+
         self.nextSend = max(self.nextSend, self.lastAck + self.cwnd)
 
         return newpackets
+
+    def _timeout(self):
+        if timer.time > self.nextTimeout:
+            self.cwnd = 1
+            self.canum = 0
+            self.fastrecovery = False
+
+            self.nextSend = self.lastAck
+            self.ssthresh = max(self.cwnd/2, 2)
+
+            logger.log('TIMED OUT!')
+            self.nextTimeout = timer.time + 2*self.srtt
+
+    def checkTimeout(self):
+        """ Check timeout status of the flow.
+        :return: A tuple of (list of new packets, new timeout)
+        """
+
+        # Timed out, crash to window size 1.
+        if not self.active:
+            self.rto *= 2
+
+            self._timeout()
+        else:
+            self.rto = min(self.ubound, max(self.lbound, self.beta * self.srtt))
+
+        self.active = False
+
+        return self.sendPackets(), self.rto
 
 
 class FlowRecipient(object):

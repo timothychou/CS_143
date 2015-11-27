@@ -93,8 +93,9 @@ class Host(Node):
         t = update_flow_event.timestamp
 
         # Send packets
-        newpackets = f.sendPackets()
+        newpackets, rto = f.checkTimeout()
         return [PacketEvent(t, self, self.links[0], p,
                             'Flow %s, packet %s from host %s to link %s' %
                             (f.flowId, p.index, self.address, self.links[0].id))
-                for p in newpackets]
+                for p in newpackets] + [UpdateFlowEvent(t + rto, self, f.flowId,
+                                        'Check for timeout on flow %s' % f.flowId)]

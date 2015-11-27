@@ -39,25 +39,37 @@ class Router(Node):
         delay through the router.
         """
 
+        # Data packet, forward to correct link
+        if isinstance(event.packet, DataPacket) or isinstance(event.packet, AckPacket):
+            nextLink = self.getRoute(event.packet.dest)
+            if nextLink:
+                return [PacketEvent(event.timestamp, self,
+                                    nextLink, event.packet,
+                                    'Router %s forwards packet to %s' % (self.address, nextLink.id))]
+            else:
+                logger.log('Router %s dropped packet %s' % (self.address, event.packet.index))
+
         # Received routing table information, update table
-        if isinstance(event.packet, RoutingPacket):
+        elif isinstance(event.packet, RoutingPacket):
             neighborTable = event.packet.routingTable
             link = event.sender
             cost = link.cost()
             # overwrite parts of routing table that use neighbor 
             # where neighbor changed
-            for dest in self.lookup_table[link]:
+            for dest in self.lookup_table.get(link, []):
                 self.routing_table[dest] = [link, 
                                             neighborTable[dest][1] + cost]
             
             # update new mins
             for dest, val in neighborTable.iteritems():
                 if self.routing_table.get(dest, [0, sys.maxint])[1] > (val[1] + cost):
-                    self.lookup_table[self.routing_table[dest][0]].remove(dest)
+                    if dest in self.routing_table:
+                        self.lookup_table[self.routing_table[dest][0]].remove(dest)
+
                     self.routing_table[dest] = [link, val[1] + cost]
-                    self.lookup_table[link].append(dest)
+                    self.lookup_table[link] = self.lookup_table.get(link, []) + [dest]
 
-
+            # logger.log3(self.address + ' ' + str(self.routing_table))
 
         # Received routing table request
         elif isinstance(event.packet, RoutingRequestPacket):
@@ -66,16 +78,6 @@ class Router(Node):
                                 RoutingPacket(self.address, event.packet.source,
                                               routingTable=self.routing_table),
                                 'Routing table packet for router %s' % self.address)]
-
-        # Data packet, forward to correct link
-        elif isinstance(event.packet, DataPacket) or isinstance(event.packet, AckPacket):
-            nextLink = self.getRoute(event.packet.dest)
-            if nextLink:
-                return [PacketEvent(event.timestamp, self,
-                                    nextLink, event.packet,
-                                    'Router %s forwards packet to %s' % (self.address, nextLink.id))]
-            else:
-                logger.Log('Router %s dropped packet %s' % (self.address, event.packet.index))
 
         # Else we don't know what to do
         else:
@@ -99,11 +101,12 @@ class Router(Node):
         This method should be the result of an Event that informs
         the Router to update. Begins bellman ford on all nodes in the graph
         """
-        return [PacketEvent(event.timestamp, self, link,
+        return [PacketEvent(event.timestamp + i*10, self, self.links[i],
                             RoutingRequestPacket(self.address),
                             'Routing table request packet for router %s' % self.address)
-                for link in self.links] + [UpdateRoutingTableEvent(event.timestamp + 100, self,
-                                                                   'Router %s updates routing table' % self.address)]
+                for i in xrange(len(self.links))] + \
+               [UpdateRoutingTableEvent(event.timestamp + 5000, self,
+                                        'Router %s updates routing table' % self.address)]
 
     def getRoute(self, destination):
         """checks routing table for route to destination"""

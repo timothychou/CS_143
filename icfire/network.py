@@ -1,14 +1,17 @@
-import networkx as nx
-import matplotlib.pyplot as plt
-from networkx.readwrite import json_graph
 import json
 
+import networkx as nx
+
+import matplotlib.pyplot as plt
+from networkx.readwrite import json_graph
+from icfire import timer
+
 import icfire.flow as flow
-from icfire.event import UpdateRoutingTableEvent
-from icfire.event import UpdateFlowEvent
+from icfire.event import UpdateRoutingTableEvent, UpdateFlowEvent, GatherDataEvent
 from icfire.networkobjects.link import Link
 from icfire.networkobjects.router import Router
 from icfire.networkobjects.host import Host
+from icfire import plot
 
 
 class Network(object):
@@ -30,21 +33,28 @@ class Network(object):
         self.nodes = dict()
         self.links = dict()
         self.flows = dict()
-        self.events = []
+        self.events = [GatherDataEvent(0, self, 'Gathering data on network.')]
         self.last_node = 0
         self.last_link = 0
         self.last_flow = 0
+
+        # Data gathering
+        self.gathertick = 10    # Gather data every 10ms
+        self.times = []         # time data was gathered
+        self.data = {}          # key = name <str>, value = data <list>
+
     # graph creation functions
 
-    def addRouter(self, node_id=None, static_routing=False):
+    def addRouter(self, node_id=None, init_time=0, static_routing=False):
         """ Adds a router to the list of hosts and to the graph representation
 
+        :param init_time: (optional) time the router starts up
         :param node_id: (optional) specify a node id to use for this node.
         :param static_routing: (optional) specify whether to use static
          or dyanmic routing
         :returns: id of router added
         """
-        if node_id is not None:
+        if node_id:
             newid = node_id
         else:
             newid = self.getNewNodeId()
@@ -57,7 +67,7 @@ class Network(object):
         if not static_routing:
             # if dynamic routing, create a update routing table event
             self.events.append(
-                UpdateRoutingTableEvent(0, self.nodes[newid],
+                UpdateRoutingTableEvent(init_time, self.nodes[newid],
                                         'Router %s updates routing table' % newid))
             # TODO(tangerine) make initial UpdateRoutingTableEvents be saved/loaded
 
@@ -105,6 +115,7 @@ class Network(object):
             self.links[linkid] = Link(self.nodes[source_id],
                                       self.nodes[target_id],
                                       rate, delay, buffsize, linkid)
+            self.data['%s-buf' % linkid] = []
             self.nodes[source_id].addLink(self.links[linkid])
             self.nodes[target_id].addLink(self.links[linkid])
             return linkid
@@ -165,6 +176,8 @@ class Network(object):
         newFlowId = self.getNewFlowId()
         f = flow.__dict__[flowType](source_id, dest_id, bytes, newFlowId)
         self.flows[newFlowId] = f
+        self.data['%s-cwnd' % newFlowId] = []
+        self.data['%s-rate' % newFlowId] = []
 
         self.nodes[source_id].addFlow(f)
         self.nodes[dest_id].addFlowRecipient(flow.FlowRecipient(newFlowId))
@@ -274,3 +287,34 @@ class Network(object):
     def getHostList(self):
         return [node for node in self.nodes.keys()
                 if self.nodes[node]['host']]
+
+    def processEvent(self, event):
+        """ Processes one event, depending on what the event is.
+
+        This method should be called directly or indirectly by an EventHandler.
+
+        :param event: Event to be processed.
+        :return: list of new Events to be enqueued.
+        """
+        if isinstance(event, GatherDataEvent):
+            self._gatherData()
+            return [GatherDataEvent(event.timestamp + self.gathertick, self,
+                                    'Gathering data on network.')]
+        else:
+            raise NotImplementedError('Network should only receive GatherDataEvents')
+
+    def _gatherData(self):
+        self.times.append(timer.time)
+
+        for f in self.flows:
+            self.data['%s-cwnd' % f].append(self.flows[f].cwnd)
+            self.data['%s-rate' % f].append(self.flows[f].cwnd / self.flows[f].srtt)
+        for l in self.links:
+            self.data['%s-buf' % l].append(self.links[l].buffersize)
+
+    def graph(self):
+        # plot.plotShit([(['title', 'x', 'y'], self.times, self.data['%s-cwnd' % f]) for f in self.flows], False)
+        plot.plotShit([(['%s-buf' % l, 'time (ms)', 'buffer (bytes)'],
+                        self.times,
+                        self.data['%s-buf' % l])
+                       for l in self.links], True)
