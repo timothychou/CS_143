@@ -1,10 +1,13 @@
 from icfire.event import PacketEvent, UpdateFlowEvent
 from icfire.networkobjects.networkobject import Node
-from icfire.packet import RoutingPacket, RoutingRequestPacket, AckPacket, DataPacket
+from icfire.packet import *
+from icfire.eventhandler import *
+from icfire.stats import HostStats
 from icfire import logger
 
 
 class Host(Node):
+
     """ Represents a host in a network
 
     This class represents a host in a network that is able to receive and
@@ -19,6 +22,7 @@ class Host(Node):
         super(self.__class__, self).__init__(address, links)
         self.flows = dict()
         self.flowrecipients = dict()
+        self.stats = HostStats()
 
     def addLink(self, link):
         """ Overwrites default add link to check for single link """
@@ -53,8 +57,8 @@ class Host(Node):
         elif isinstance(event.packet, AckPacket):
             assert packet.dest == self.address
             assert packet.flowId in self.flows
-
-            newpackets = self.flows[packet.flowId].receiveAckPacket(packet)
+            newpackets = self.flows[packet.flowId].receiveAckPacket(
+                packet, event.timestamp)
             for p in newpackets:
                 logger.log('Flow %s, packet %s from host %s to link %s' %
                            (p.flowId, p.index,
@@ -69,7 +73,7 @@ class Host(Node):
             # TODO(choutim) include packet integrity checks, maybe
 
             newPacket = self.flowrecipients[
-                packet.flowId].receiveDataPacket(packet)
+                packet.flowId].receiveDataPacket(packet, event.timestamp)
             logger.log('ACK %s for flow %s from host %s to link %s' %
                        (newPacket.index, newPacket.flowId,
                         self.address, self.links[0].id))
@@ -93,7 +97,7 @@ class Host(Node):
         t = update_flow_event.timestamp
 
         # Send packets
-        newpackets, rto = f.checkTimeout()
+        newpackets, rto = f.checkTimeout(t)
         return [PacketEvent(t, self, self.links[0], p,
                             'Flow %s, packet %s from host %s to link %s' %
                             (f.flowId, p.index, self.address, self.links[0].id))

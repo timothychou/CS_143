@@ -12,6 +12,7 @@ from icfire.networkobjects.link import Link
 from icfire.networkobjects.router import Router
 from icfire.networkobjects.host import Host
 from icfire import plot
+from icfire.stats import *
 
 
 class Network(object):
@@ -123,7 +124,7 @@ class Network(object):
             print("Source or target not in the graph!")
             return None
 
-    def addFlow(self, source_id, dest_id, bytes, timestamp, flowType):
+    def addFlow(self, source_id, dest_id, bytes, timestamp, flowType, flowId=None):
         """ This function adds a flow to the network description
 
         This also creates the flow if the flow has not been created already
@@ -143,7 +144,7 @@ class Network(object):
                 return
             else:
                 newFlowId = self._createFlow(source_id, dest_id, bytes,
-                                             timestamp, flowType)
+                                             timestamp, flowType, flowId)
                 eventjson = {
                     'source_id': source_id,
                     'dest_id': dest_id,
@@ -155,7 +156,7 @@ class Network(object):
         else:
             print("host_id not found")
 
-    def _createFlow(self, source_id, dest_id, bytes, timestamp, flowType):
+    def _createFlow(self, source_id, dest_id, bytes, timestamp, flowType, flowId=None):
         """ Adds a new Flow from source_id to dest_id
 
         Uses reflection on flowType to create the appropriate Flow object
@@ -172,20 +173,24 @@ class Network(object):
             return None
 
         assert flowType in flow.__dict__
+        if flowId is None:
+            newFlowId = self.getNewFlowId()
+        else:
+            newFlowId = flowId
 
-        newFlowId = self.getNewFlowId()
         f = flow.__dict__[flowType](source_id, dest_id, bytes, newFlowId)
         self.flows[newFlowId] = f
         self.data['%s-cwnd' % newFlowId] = []
         self.data['%s-rate' % newFlowId] = []
 
         self.nodes[source_id].addFlow(f)
-        self.nodes[dest_id].addFlowRecipient(flow.FlowRecipient(newFlowId))
+        fr = flow.FlowRecipient(newFlowId, f.stats)
+        self.nodes[dest_id].addFlowRecipient(fr)
 
         # Create an Event to update the Flow (send first packet)
         self.events.append(
             UpdateFlowEvent(timestamp, self.nodes[source_id], newFlowId,
-                            'Initialize flow %d' % newFlowId))
+                            'Initialize flow ' + repr(newFlowId)))
         return newFlowId
 
     def loadFlows(self, filename=None):
@@ -307,14 +312,18 @@ class Network(object):
         self.times.append(timer.time)
 
         for f in self.flows:
-            self.data['%s-cwnd' % f].append(self.flows[f].cwnd)
-            self.data['%s-rate' % f].append(self.flows[f].cwnd / self.flows[f].srtt)
+            self.data['%s-cwnd' % str(f)].append(self.flows[f].cwnd)
+            self.data['%s-rate' % str(f)].append(self.flows[f].cwnd / self.flows[f].srtt)
         for l in self.links:
-            self.data['%s-buf' % l].append(self.links[l].buffersize)
+            self.data['%s-buf' % str(l)].append(self.links[l].buffersize)
 
+    def analyze(self):
+        pass
+        # Analyze
     def graph(self):
-        plot.plotShit([(['%s-cwnd' % f, 'time (ms)', 'window (packets)'], self.times, self.data['%s-cwnd' % f]) for f in self.flows], False)
-        plot.plotShit([(['%s-buf' % l, 'time (ms)', 'buffer (bytes)'],
+        # Charlie
+        plot.plotShit([([str(f) + '-cwnd' , 'time (ms)', 'window (packets)'], self.times, self.data[str(f) + '-cwnd' ]) for f in self.flows], False)
+        plot.plotShit([(['%s-buf' % str(l), 'time (ms)', 'buffer (bytes)'],
                         self.times,
-                        self.data['%s-buf' % l])
+                        self.data['%s-buf' % str(l)])
                        for l in self.links], True)

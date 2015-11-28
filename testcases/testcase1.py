@@ -25,7 +25,7 @@ def buildNetwork(static_routing=False):
     tc0.addLink(r2, r4, rate=10, delay=10, buffsize=64, linkid='L3')
     tc0.addLink(r3, r4, rate=10, delay=10, buffsize=64, linkid='L4')
     tc0.addLink(r4, h2, rate=12.5, delay=10, buffsize=64, linkid='L5')
-    tc0.addFlow(h1, h2, bytes=20000000, timestamp=20000, flowType='TCPRenoFlow')
+    tc0.addFlow(h1, h2, bytes=20000000, timestamp=20000, flowType='TCPRenoFlow', flowId='F1')
 
     return tc0
 
@@ -33,25 +33,26 @@ def buildNetwork(static_routing=False):
 if __name__ == '__main__':
     filename = 'testcase1.json'
     static_routing = False
-    tc0 = buildNetwork(static_routing)
+    tc1 = buildNetwork(static_routing)
     # tc0.save(filename)
     # tc0.draw()
 
     # tc0a = Network()
     # tc0a.load(filename)
 
-    tc0a = tc0  # todo loading/saving not 100% functional right now
+    tc1a = tc1  # todo loading/saving not 100% functional right now
 
     # Set routing tables manually
     if static_routing:
-        tc0a.nodes['R1'].routing_table = {'H1': (tc0a.links['L0'], 3),
+        tc1a.nodes['R1'].routing_table = {'H1': (tc0a.links['L0'], 3),
                                           'H2': (tc0a.links['L1'], 3)}
-        tc0a.nodes['R2'].routing_table = {'H1': (tc0a.links['L1'], 3),
+        tc1a.nodes['R2'].routing_table = {'H1': (tc0a.links['L1'], 3),
                                           'H2': (tc0a.links['L3'], 3)}
-        tc0a.nodes['R3'].routing_table = {'H1': (tc0a.links['L2'], 3),
+        tc1a.nodes['R3'].routing_table = {'H1': (tc0a.links['L2'], 3),
                                           'H2': (tc0a.links['L4'], 3)}
-        tc0a.nodes['R4'].routing_table = {'H1': (tc0a.links['L4'], 3),
+        tc1a.nodes['R4'].routing_table = {'H1': (tc0a.links['L4'], 3),
                                           'H2': (tc0a.links['L5'], 3)}
 
-    EventHandler(tc0a).run(1000000)
-    tc0a.graph()
+    EventHandler(tc1a).run(1000000)
+    tc1a.flows['F1'].stats.plot()
+    tc1a.graph()

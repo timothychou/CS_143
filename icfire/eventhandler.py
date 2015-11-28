@@ -1,4 +1,4 @@
-""" The EventHandler, Event objects.
+""" The EventHandler.
 
 EventHandler manages queueing Events and processing them in sequential order.
 
@@ -93,3 +93,18 @@ class EventHandler:
         else:
             for _ in trange(steps):
                 self.step()
+
+    def processEvent(event):
+        """
+        :param event: Event to be processed
+        """
+        if isinstance(event, StatsEvent):
+            return self._processStatsEvent(event)
+        else:
+            raise NotImplementedError(
+                'Handling of %s not implemented' % event.packet.__class__)
+
+    def _processStatsEvent(event):
+        """
+        :param event: Event to be processed
+        """

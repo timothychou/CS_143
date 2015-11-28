@@ -2,6 +2,7 @@ from icfire.packet import AckPacket
 from icfire.packet import DataPacket
 import icfire.timer as timer
 import logger
+from icfire.stats import FlowStats
 
 
 class Flow(object):
@@ -20,12 +21,15 @@ class Flow(object):
         :param bytes: bytes to send (0 for continuous)
         :param flowId: id of the flow
         """
-        raise NotImplementedError(
-            'Flow class should never be instantiated.')
+        self.source_id = source_id
+        self.dest_id = dest_id
+        self.bytes = bytes
+        self.flowId = flowId
+        self.stats = FlowStats()
 
-    def receiveAckPacket(self, packet):
+    def receiveAckPacket(self, packet, timestamp):
         """ Alter the flow state based on the ACK packet received.
-
+        TODO: (tangerinecat) edit docstring for this
         Returns a list of new packets to send
 
         :param packet: The ACK packet received
@@ -33,7 +37,7 @@ class Flow(object):
         """
         raise NotImplementedError('This should be overriden by subclass')
 
-    def sendPackets(self):
+    def sendPackets(self, timestamp):
         """ Try to send packets to send based on the current state of the Flow
 
         :return: A list of new packets
@@ -59,15 +63,12 @@ class SuperSimpleFlow(Flow):
         :param bytes: bytes to send (0 for continuous)
         :param flowId: id of the flow
         """
-        self.source_id = source_id
-        self.dest_id = dest_id
-        self.bytes = bytes
-        self.flowId = flowId
+        super(SuperSimpleFlow, self).__init__(source_id, dest_id, bytes, flowId)
 
         self.lastAck = 0    # last received ACK number
         self.lastSent = -1  # last packet index sent
 
-    def receiveAckPacket(self, packet):
+    def receiveAckPacket(self, packet, timestamp):
         """ A new ACK number means that the next packet can be sent.
 
         :param packet: The ACK packet received
@@ -78,7 +79,7 @@ class SuperSimpleFlow(Flow):
             self.lastAck = packet.index
         return self.sendPackets()
 
-    def sendPackets(self):
+    def sendPackets(self, timestamp):
         """ Send a packet if window size allows it
 
         :return: A list of new packets
@@ -104,17 +105,15 @@ class SuperSimpleFlow2(Flow):
         :param bytes: bytes to send (0 for continuous)
         :param flowId: id of the flow
         """
-        self.source_id = source_id
-        self.dest_id = dest_id
-        self.bytes = bytes
-        self.flowId = flowId
+        super(SuperSimpleFlow2, self).__init__(
+            source_id, dest_id, bytes, flowId)
 
         self.windowsize = 60
 
         self.acks = [0]
         self.inflight = []
 
-    def receiveAckPacket(self, packet):
+    def receiveAckPacket(self, packet, timestamp):
         """ A new ACK number means that the next packet can be sent.
 
         :param packet: The AckPacket received
@@ -124,9 +123,9 @@ class SuperSimpleFlow2(Flow):
         self.acks.append(packet.index)
         if packet.index - 1 in self.inflight:
             self.inflight.remove(packet.index - 1)
-        return self.sendPackets()
+        return self.sendPackets(timestamp)
 
-    def sendPackets(self):
+    def sendPackets(self, timestamp):
         """ Send packets if window size allows it
 
         :return: A list of new packets
@@ -141,7 +140,6 @@ class SuperSimpleFlow2(Flow):
                                                  lastack + i, self.flowId))
                     self.inflight.append(lastack + i)
                     break
-
         return newpackets
 
 
@@ -158,10 +156,8 @@ class TCPRenoFlow(Flow):
         """
 
         # General flow info
-        self.source_id = source_id
-        self.dest_id = dest_id
-        self.bytes = bytes
-        self.flowId = flowId
+        super(TCPRenoFlow, self).__init__(
+            source_id, dest_id, bytes, flowId)
 
         # Flow status
         self.lastAck = 0
@@ -189,10 +185,11 @@ class TCPRenoFlow(Flow):
         self.active = True
         self.nextTimeout = 0
 
-    def receiveAckPacket(self, packet):
+    def receiveAckPacket(self, packet, timestamp):
         """ A new ACK number means that the next packet can be sent.
 
         :param packet: The AckPacket received
+        :param timestamp: the time this action occurs
         :return: A list of new packets
         """
         assert isinstance(packet, AckPacket)
@@ -228,7 +225,8 @@ class TCPRenoFlow(Flow):
         # New ACK
         elif packet.index > self.lastAck:
             if packet.index - 1 > self.lastRepSent and not self.inflight[packet.index-1][1]:
-                rtt = timer.time - self.inflight[packet.index-1][0]
+                rtt = timestamp - self.inflight[packet.index-1][0]
+                self.stats.addRTT(timestamp, rtt)
                 self.srtt = self.alpha * self.srtt + (1-self.alpha) * rtt
 
             for i in range(self.lastAck, packet.index):
@@ -256,9 +254,9 @@ class TCPRenoFlow(Flow):
                     self.cwnd += 1
                     self.canum = 0
 
-        return resend + self.sendPackets()
+        return resend + self.sendPackets(timestamp)
 
-    def sendPackets(self):
+    def sendPackets(self, timestamp):
         """ Send packets if window size allows it
 
         :return: A list of new packets
@@ -269,14 +267,15 @@ class TCPRenoFlow(Flow):
 
         # Set sent time for RTT calcs
         for p in newpackets:
-            self.inflight[p.index] = (timer.time, p.index in self.inflight)
+            self.inflight[p.index] = (timestamp, p.index in self.inflight)
+            self.stats.addBytesSent(timestamp, p.size)
 
         self.nextSend = max(self.nextSend, self.lastAck + self.cwnd)
 
         return newpackets
 
-    def _timeout(self):
-        if timer.time > self.nextTimeout:
+    def _timeout(self, timestamp):
+        if timestamp > self.nextTimeout:
             self.cwnd = 1
             self.canum = 0
             self.fastrecovery = False
@@ -285,9 +284,9 @@ class TCPRenoFlow(Flow):
             self.ssthresh = max(self.cwnd/2, 2)
 
             logger.log('TIMED OUT!')
-            self.nextTimeout = timer.time + 2*self.srtt
+            self.nextTimeout = timestamp + 2*self.srtt
 
-    def checkTimeout(self):
+    def checkTimeout(self, timestamp):
         """ Check timeout status of the flow.
         :return: A tuple of (list of new packets, new timeout)
         """
@@ -296,34 +295,38 @@ class TCPRenoFlow(Flow):
         if not self.active:
             self.rto *= 2
 
-            self._timeout()
+            self._timeout(timestamp)
         else:
             self.rto = min(self.ubound, max(self.lbound, self.beta * self.srtt))
 
         self.active = False
 
-        return self.sendPackets(), self.rto
+        return self.sendPackets(timestamp), self.rto
 
 
 class FlowRecipient(object):
 
     """ Class for the Flow recipient to manage the Flow. """
 
-    def __init__(self, flowId):
+    def __init__(self, flowId, stats):
         self.flowId = flowId
 
         self.received = []  # List of received packet indices
         self.lastAck = 0    # Last ack index sent (expected next packet index)
+        self.stats = stats
 
-    def receiveDataPacket(self, packet):
+    def receiveDataPacket(self, packet, timestamp):
         """ Note the received packet and respond with the appropriate ACK packet
 
         :param packet: received data packet
         :return: new AckPacket
         """
+        self.stats.addBytesRecieved(timestamp, packet.size)
         self.received.append(packet.index)
         while self.lastAck in self.received:
             self.received.remove(self.lastAck)
             self.lastAck += 1
 
-        return AckPacket(packet.dest, packet.source, self.lastAck, packet.flowId)
+        self.stats.addBytesRecieved(timestamp, packet.size)
+        return AckPacket(packet.dest, packet.source,
+                         self.lastAck, packet.flowId)
