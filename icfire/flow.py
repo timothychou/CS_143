@@ -25,7 +25,7 @@ class Flow(object):
         self.dest_id = dest_id
         self.bytes = bytes
         self.flowId = flowId
-        self.stats = FlowStats()
+        self.stats = FlowStats(flowId)
 
     def receiveAckPacket(self, packet, timestamp):
         """ Alter the flow state based on the ACK packet received.

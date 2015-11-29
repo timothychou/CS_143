@@ -22,7 +22,7 @@ class Host(Node):
         super(self.__class__, self).__init__(address, links)
         self.flows = dict()
         self.flowrecipients = dict()
-        self.stats = HostStats()
+        self.stats = HostStats(address)
 
     def addLink(self, link):
         """ Overwrites default add link to check for single link """
@@ -41,29 +41,34 @@ class Host(Node):
         self.flowrecipients[flowrecipient.flowId] = flowrecipient
 
     def _processPacketEvent(self, event):
-        """Processes packet event
+        """Processes packet events
 
         sends back an ack as needed"""
         packet = event.packet
+        timestamp = event.timestamp
+        newPackets = []
+        # Record arrival of new packet
+        if isinstance(packet, Packet):
+            self.stats.addBytesRecieved(timestamp, packet.size)
 
         # Handle routing table update requests
         if isinstance(event.packet, RoutingRequestPacket):
             logger.log('Routing table packet for host %s' % self.address)
-            return self.links[0].addPackets(
-                [RoutingPacket(self.address, event.packet.source,
-                               routingTable={self.address: [self.address, 0]})], self)
+            newPacket = RoutingPacket(
+                self.address, event.packet.source,
+                routingTable={self.address: [self.address, 0]})
+            newPackets.append(newPacket)
 
         # Packet is ACK, update Flow accordingly
         elif isinstance(event.packet, AckPacket):
             assert packet.dest == self.address
             assert packet.flowId in self.flows
-            newpackets = self.flows[packet.flowId].receiveAckPacket(
+            newPackets = self.flows[packet.flowId].receiveAckPacket(
                 packet, event.timestamp)
-            for p in newpackets:
+            for p in newPackets:
                 logger.log('Flow %s, packet %s from host %s to link %s' %
                            (p.flowId, p.index,
                             self.address, self.links[0].id))
-            return self.links[0].addPackets(newpackets, self)
 
         # Treat packet as data packet, return appropriate ACK
         elif isinstance(event.packet, DataPacket):
@@ -77,12 +82,18 @@ class Host(Node):
             logger.log('ACK %s for flow %s from host %s to link %s' %
                        (newPacket.index, newPacket.flowId,
                         self.address, self.links[0].id))
-            return self.links[0].addPackets([newPacket], self)
+            newPackets.append(newPacket)
 
         # Else we don't know what to do
         else:
             raise NotImplementedError(
                 'Handling of %s not implemented' % event.packet.__class__)
+
+        # Record new packets
+        for p in newPackets:
+            self.stats.addBytesSent(timestamp, p.size)
+
+        return self.links[0].addPackets(newPackets, self)
 
     def _processOtherEvent(self, event):
         """ Processes non-packet events """

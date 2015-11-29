@@ -1,4 +1,5 @@
 class Packet(object):
+
     """This class represents a packet of data
 
     It can be sent between routers and hosts"""
@@ -27,7 +28,9 @@ class Packet(object):
 
 
 class DataPacket(Packet):
+
     """ This class represents a packet transferring arbitrary data """
+    size = 1024
 
     def __init__(self, source, dest, index, flowId):
         super(self.__class__, self).__init__(source, dest, index, size=1024)
@@ -36,25 +39,36 @@ class DataPacket(Packet):
 
 
 class AckPacket(Packet):
+
     """ This class represents an ack packet """
+    size = 64
 
     def __init__(self, source, dest, index, flowId):
-        super(self.__class__, self).__init__(source, dest, index, size=64, ack=True)
+        super(self.__class__, self).__init__(
+            source, dest, index, size=64, ack=True)
 
         self.flowId = flowId
 
 
 class RoutingPacket(Packet):
+
     """ This class represents a routing table packet """
+    size = 1024
+    index = None
 
     def __init__(self, source, dest, routingTable=None):
-        super(self.__class__, self).__init__(source, dest, index=None, size=1024)
+        super(self.__class__, self).__init__(
+            source, dest, index=None, size=1024)
 
-        self.routingTable = routingTable    # Routing table can fit inside 1024 bytes
+        # Routing table can fit inside 1024 bytes
+        self.routingTable = routingTable
 
 
 class RoutingRequestPacket(Packet):
+
     """ This class represents a request for routing table """
+    size = 64
 
     def __init__(self, source):
-        super(self.__class__, self).__init__(source, dest=None, index=None, size=64)
+        super(self.__class__, self).__init__(
+            source, dest=None, index=None, size=64)

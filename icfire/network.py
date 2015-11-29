@@ -116,7 +116,7 @@ class Network(object):
             self.links[linkid] = Link(self.nodes[source_id],
                                       self.nodes[target_id],
                                       rate, delay, buffsize, linkid)
-            self.data['%s-buf' % linkid] = []
+            self.data['%s-buf' % str(linkid)] = []
             self.nodes[source_id].addLink(self.links[linkid])
             self.nodes[target_id].addLink(self.links[linkid])
             return linkid
