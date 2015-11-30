@@ -5,6 +5,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from networkx.readwrite import json_graph
 from icfire import timer
+from icfire import logger
 
 import icfire.flow as flow
 from icfire.event import UpdateRoutingTableEvent, UpdateFlowEvent, GatherDataEvent
@@ -49,28 +50,33 @@ class Network(object):
     def addRouter(self, node_id=None, init_time=0, static_routing=False):
         """ Adds a router to the list of hosts and to the graph representation
 
-        :param init_time: (optional) time the router starts up
         :param node_id: (optional) specify a node id to use for this node.
+        :param init_time: (optional) time the router starts up
         :param static_routing: (optional) specify whether to use static
          or dyanmic routing
         :returns: id of router added
         """
-        if node_id:
-            newid = node_id
-        else:
+        newid = None
+        if node_id is None:
             newid = self.getNewNodeId()
-        if self.G.has_node(newid):
-            print("router " + node_id + " is already in the graph.")
+        elif self.G.has_node(newid):
+            logger.log("router " + str(node_id) + " is already in the graph.")
             return
+        else:
+            newid = node_id
+
         self.G.add_node(newid, host=0)
         self.nodes[newid] = Router(newid, [])
 
         if not static_routing:
             # if dynamic routing, create a update routing table event
             self.events.append(
-                UpdateRoutingTableEvent(init_time, self.nodes[newid],
-                                        'Router %s updates routing table' % newid))
-            # TODO(tangerine) make initial UpdateRoutingTableEvents be saved/loaded
+                UpdateRoutingTableEvent(
+                    init_time,
+                    self.nodes[newid],
+                    'Router %s updates routing table' % newid))
+            # TODO(tangerine) make initial UpdateRoutingTableEvents be
+            # saved/loaded
 
         return newid
 
@@ -80,10 +86,11 @@ class Network(object):
         :param node_id: (optional) specify a node id to use for this node.
         :returns: id of host added
         """
-        if node_id is not None:
-            newid = node_id
-        else:
+        if node_id is None:
             newid = self.getNewNodeId()
+        else:
+            newid = node_id
+
         if newid in self.G:
             print "Graph already has node " + node_id + ". Not adding."
             return newid
@@ -102,6 +109,7 @@ class Network(object):
         :param rate: link rate (Mbps)
         :param delay: delay of the link (ms)
         :param buffsize: link buffer size (KB)
+        :param linkid: (optional) optional unique id in
         :returns: integer or string key of the link
 
         """
@@ -109,6 +117,9 @@ class Network(object):
             # If no linkid is provided, generate a unique
             if linkid is None:
                 linkid = self.getNewLinkId()
+            elif linkid in self.links:
+                logger.log("Link ID is not unique!")
+                return None
             if not self.G.has_edge(source_id, target_id):
                 self.G.add_edge(source_id, target_id,
                                 rate=rate, delay=delay,
@@ -124,7 +135,8 @@ class Network(object):
             print("Source or target not in the graph!")
             return None
 
-    def addFlow(self, source_id, dest_id, bytes, timestamp, flowType, flowId=None):
+    def addFlow(self, source_id, dest_id, bytes, timestamp, flowType,
+                flowId=None):
         """ This function adds a flow to the network description
 
         This also creates the flow if the flow has not been created already
@@ -260,7 +272,8 @@ class Network(object):
         nx.draw(self.G, pos=pos, node_color=colors)
         nx.draw_networkx_labels(self.G, pos, font_color='w')
         edges = self.G.edges(data=True)
-        edgelabels = dict(((edge[0], edge[1]), str(edge[2].get('rate')) + ' mbps') for edge in edges)
+        edgelabels = dict(
+            ((edge[0], edge[1]), str(edge[2].get('rate')) + ' mbps') for edge in edges)
         nx.draw_networkx_edge_labels(self.G, pos, edge_labels=edgelabels)
         plt.show()
 
@@ -306,23 +319,27 @@ class Network(object):
             return [GatherDataEvent(event.timestamp + self.gathertick, self,
                                     'Gathering data on network.')]
         else:
-            raise NotImplementedError('Network should only receive GatherDataEvents')
+            raise NotImplementedError(
+                'Network should only receive GatherDataEvents')
 
     def _gatherData(self):
         self.times.append(timer.time)
 
         for f in self.flows:
             self.data['%s-cwnd' % str(f)].append(self.flows[f].cwnd)
-            self.data['%s-rate' % str(f)].append(self.flows[f].cwnd / self.flows[f].srtt)
+            self.data['%s-rate' %
+                      str(f)].append(self.flows[f].cwnd / self.flows[f].srtt)
         for l in self.links:
             self.data['%s-buf' % str(l)].append(self.links[l].buffersize)
 
     def analyze(self):
         pass
         # Analyze
+
     def graph(self):
         # Charlie
-        plot.plotShit([([str(f) + '-cwnd' , 'time (ms)', 'window (packets)'], self.times, self.data[str(f) + '-cwnd' ]) for f in self.flows], False)
+        plot.plotShit([([str(f) + '-cwnd', 'time (ms)', 'window (packets)'],
+                        self.times, self.data[str(f) + '-cwnd']) for f in self.flows], False)
         plot.plotShit([(['%s-buf' % str(l), 'time (ms)', 'buffer (bytes)'],
                         self.times,
                         self.data['%s-buf' % str(l)])

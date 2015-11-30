@@ -6,6 +6,7 @@ sys.path.append(os.path.dirname(os.getcwd()))
 
 from icfire.network import Network
 from icfire.eventhandler import EventHandler
+import icfire.stats as stats
 
 
 def buildNetwork(static_routing=False):
@@ -58,5 +59,27 @@ if __name__ == '__main__':
     EventHandler(tc1a).run(1000000)
     tc1a.flows['F1'].stats.analyze()
     tc1a.nodes['H1'].stats.analyze()
-    tc1a.links['L1'].stats.analyze()
+    # tc1a.links['L1'].stats.analyze()
+    # plt.show()
+
+    plt.figure()
+    link1flowrate = tc1a.links['L1'].stats.bytesflowed
+    link2flowrate = tc1a.links['L2'].stats.bytesflowed
+
+    stats.plotrate(link1flowrate, 50, label="L1")
+    stats.plotrate(link2flowrate, 50, label="L2")
+    plt.title("Byte flow rate in L1 and L2")
+    plt.ylabel("Flow Rate (Bytes/ms)")
+    stats.zeroxaxis()
+
+    plt.figure()
+    link1buffer = tc1a.links['L1'].stats.bufferoccupancy
+    link2buffer = tc1a.links['L2'].stats.bufferoccupancy
+
+    stats.plotrate(link1buffer, 50, label="L1")
+    stats.plotrate(link2buffer, 50, label="L2")
+    plt.title("Byte flow rate in L1 and L2")
+    plt.ylabel("Buffer Occupancy (Bytes)")
+    stats.zeroxaxis()
+
     plt.show()

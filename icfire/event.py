@@ -5,7 +5,8 @@ class Event(object):
 
         :param timestamp: time (integer) representing when the Event occurs.
         :param eventObject: object that the Event occurs on.
-        :param logMessage: [optional] string describing the event for logging purposes.
+        :param logMessage: [optional] string describing the event for
+            logging purposes.
         """
         self.timestamp = timestamp
         self.eventObject = eventObject
@@ -39,7 +40,8 @@ class PacketEvent(Event):
         :param sender: sender of the packet (object).
         :param receiver: receiver of the packet (object).
         :param packet: actual packet being sent.
-        :param logMessage: [optional] string describing the event for logging purposes.
+        :param logMessage: [optional] string describing the event for
+            logging purposes.
         """
 
         super(self.__class__, self).__init__(timestamp, receiver, logMessage)
@@ -49,7 +51,8 @@ class PacketEvent(Event):
 
 class UpdateFlowEvent(Event):
 
-    """ Event that tells the Host to check on the Flow status (e.g. timeout). """
+    """ Event that tells the Host to check on the Flow status (e.g. timeout).
+    """
 
     def __init__(self, timestamp, host, flowId, logMessage=None):
         """ Constructor for an UpdateFlowEvent.
@@ -57,7 +60,8 @@ class UpdateFlowEvent(Event):
         :param timestamp: time (integer) representing when the Event occurs.
         :param host: Host that owns the Flow.
         :param flowId: id of the Flow to check up on.
-        :param logMessage: [optional] string describing the event for logging purposes.
+        :param logMessage: [optional] string describing the event for
+            logging purposes.
         """
         super(self.__class__, self).__init__(timestamp, host, logMessage)
         self.flowId = flowId
@@ -86,7 +90,8 @@ class LinkTickEvent(Event):
 
         :param timestamp: time (integer) representing when the Event occurs.
         :param link: Link that needs to send another packet.
-        :param logMessage: [optional] string describing the event for logging purposes.
+        :param logMessage: [optional] string describing the event for
+            logging purposes.
         """
         super(self.__class__, self).__init__(timestamp, link, logMessage)
 
@@ -101,7 +106,8 @@ class GatherDataEvent(Event):
 
         :param timestamp: time (integer) representing when the Event occurs.
         :param network: Network to gather data for.
-        :param logMessage: [optional] string describing the event for logging purposes.
+        :param logMessage: [optional] string describing the event for
+            logging purposes.
         """
         super(self.__class__, self).__init__(timestamp, network, logMessage)
 
@@ -116,7 +122,8 @@ class StatsEvent(Event):
 
         :param timestamp: time (integer) representing when the Event occurs.
         :param link: Link that needs to send another packet.
-        :param logMessage: [optional] string describing the event for logging purposes.
+        :param logMessage: [optional] string describing the event for
+            logging purposes.
         """
 
         super(self.__class__, self).__init__(

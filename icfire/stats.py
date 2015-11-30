@@ -63,7 +63,7 @@ class HostStats(Stats):
         plotrate(self.bytesrecieved, 40, label="recieved")
         plt.title("Bytes send and recieve rates from host " +
                   str(self.parent_id))
-        plt.ylabel("Bytes")
+        plt.ylabel("Bytes/ms")
         plt.legend()
 
 
@@ -114,8 +114,11 @@ class FlowStats(Stats):
 
     def analyze(self):
         """ This script does a full analysis over the stats stored in a flow
+            and plots graphs relevant the data.
+
+            Use this function as an example file to generate custom graphs,
+            such as aggregating data from various links
         """
-        # todo (Charlie) Check units
         plt.figure()
         plotcumsum(self.bytessent, label="bytes sent")
         plotcumsum(self.bytesrecieved, label="bytes recieved")
@@ -125,8 +128,8 @@ class FlowStats(Stats):
         plt.legend()
 
         plt.figure()
-        plotrate(self.bytessent, 40, label="bytes sent")
-        plotrate(self.bytesrecieved, 40, label="bytes sent")
+        plotrate(self.bytessent, 40, label="sent")
+        plotrate(self.bytesrecieved, 40, label="breceived")
         plt.title("Send and recieve data rates in flow " +
                   str(self.parent_id))
         plt.ylabel("Bytes/ms")
@@ -134,18 +137,18 @@ class FlowStats(Stats):
 
         plt.figure()
         plotrate(self.rttdelay, 30)
-        plt.ylabel("Round-trip delay (s)")
+        plt.ylabel("Round-trip delay (ms)")
         plt.title("Round-Trip delay in flow " +
                   str(self.parent_id))
 
     def plot(self):
         """ Plots the raw data as a scatterplot """
         plt.figure()
-        plt.scatter(self.bytessent.keys(), self.bytessent.values())
+        plotraw(self.bytessent)
         plt.figure()
-        plt.scatter(self.bytesrecieved.keys(), self.bytesrecieved.values())
+        plotraw(self.bytesrecieved)
         plt.figure()
-        plt.scatter(self.rttdelay.keys(), self.rttdelay.values())
+        plotraw(self.rttdelay)
         plt.show()
 
 
@@ -155,7 +158,7 @@ class LinkStats(Stats):
 
     This class should model
 
-    1. buffer occupancy (NOT IMPLEMENTED YET) TODO (tangerine)
+    1. buffer occupancy
     2. packet loss
     3. flow rate
 
@@ -179,27 +182,47 @@ class LinkStats(Stats):
         else:
             self.bytesflowed[timestamp] = bytes
 
+    def updateBufferOccupancy(self, timestamp, buffersize):
+            self.bufferoccupancy[timestamp] = buffersize
+
     def analyze(self):
         plt.figure()
         plotrate(self.bytesflowed, 50)
         plt.title("Byte flow rate through link " +
                   str(self.parent_id))
         plt.ylabel("Flow Rate (Byte/ms)")
+
+        # Plots Cumulative
         plt.figure()
         plotcumsum(self.bytesflowed)
         plt.title("Cummulative byte flow through link " +
                   str(self.parent_id))
         plt.ylabel("Bytes")
         plt.figure()
-        plotcumsum(self.lostpackets)
-        plt.title("Cumulative packets lost in link " +
+        plotintervalsum(self.lostpackets, 20)
+        plt.title("Packets lost in link " +
                   str(self.parent_id))
         plt.ylabel("Packets")
+
+        plt.figure()
+        plotrate(self.bufferoccupancy, 50)
+        plt.title("Buffer occupancy in link " +
+                  str(self.parent_id))
+        plt.ylabel("Occupancy (kb)")
 
 """ Helper Functions """
 
 
 def plotrate(datadict, resolution, **kwargs):
+    """ Plots the rate of data value averaged over a time interval
+
+    This works by creating discrete time interval and averaging all values
+    within said interval
+
+    :param datadict: dictionary of time-value pairs
+    :param resolution: interval in millisecond to aggregate over
+    :param kwargs: dictionary, or keyword arguments to be passed to pyplot
+    """
     sortedtimes = sorted(datadict.keys())
     sorteddata = [datadict[key] for key in sortedtimes]
     assert(len(sortedtimes) == len(sorteddata))
@@ -220,10 +243,48 @@ def plotrate(datadict, resolution, **kwargs):
 
     plt.plot(times, rates, **kwargs)
     plt.xlabel("Time (ms)")
+    zeroxaxis()
+
+
+def plotintervalsum(datadict, resolution, **kwargs):
+    """ Plots the sum of data value aggregated over a time interval
+
+    This works by creating discrete time interval and summing all values
+    within said interval
+
+    :param datadict: dictionary of time-value pairs
+    :param resolution: interval in millisecond to aggregate over
+    :param kwargs: dictionary, or keyword arguments to be passed to pyplot
+    """
+    sortedtimes = sorted(datadict.keys())
+    sorteddata = [datadict[key] for key in sortedtimes]
+    assert(len(sortedtimes) == len(sorteddata))
+    time = 0
+    datatotal = 0
+    times = []
+    rates = []
+    for i in range(len(sortedtimes)):
+        while(True):
+            if sortedtimes[i] < time:
+                datatotal += sorteddata[i]
+                break
+            else:
+                times.append(time)
+                rates.append(datatotal)
+                datatotal = 0
+                time += resolution
+
+    plt.plot(times, rates, **kwargs)
+    plt.xlabel("Time (ms)")
+    zeroxaxis()
 
 
 def plotcumsum(datadict, **kwargs):
-    """ Plots a cumulative sum """
+    """ Plots a cumulative sum
+
+    :param datadict: dictionary of time-value pairs
+    :param kwargs: dictionary, or keyword arguments to be passed to pyplot
+    """
     sortedtimes = sorted(datadict.keys())
     sorteddata = [datadict[key] for key in sortedtimes]
     assert(len(sortedtimes) == len(sorteddata))
@@ -231,7 +292,26 @@ def plotcumsum(datadict, **kwargs):
 
     plt.plot(sortedtimes, cumsum, **kwargs)
     plt.xlabel("Time (ms)")
+    zeroxaxis()
 
+
+def plotraw(datadict, **kwargs):
+    """ Plots the raw data
+
+    :param datadict: dictionary of time-value pairs
+    :param kwargs: dictionary, or keyword arguments to be passed to pyplot
+    """
+    plt.scatter(datadict.keys(), datadict.values())
+    plt.xlabel("Time (ms)")
+    zeroxaxis()
+
+
+def zeroxaxis():
+    """ Sets the left hand side of the axis to 0
+    """
+    cumaxis = list(plt.axis())
+    cumaxis[0] = 0
+    plt.axis(cumaxis)
 
 """ The following functions are experimental. Do not use """
 
