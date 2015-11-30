@@ -1,3 +1,12 @@
+"""
+icfire.packet
+~~~~~~~~~~~~~
+
+This module implements the base packet class and other sub packets
+
+"""
+
+
 class Packet(object):
 
     """This class represents a packet of data

@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+
+"""
+icfire.networkobject
+~~~~~~~~~~~~~~~~~~~~
+
+This module contains the base classes for all objects in the network and
+also the node objects. Network objects can process events.
+
+"""
+
 from icfire.event import PacketEvent
 from icfire.event import Event
 

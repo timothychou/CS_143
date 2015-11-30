@@ -1,3 +1,15 @@
+# -*- coding: utf-8 -*-
+
+"""
+icfire.events
+~~~~~~~~~~~~~
+
+This module contains the event base class and all events that belong in the
+eventhandler. Events are used to time actions such delays
+
+"""
+
+
 class Event(object):
 
     def __init__(self, timestamp, eventObject, logMessage=None):

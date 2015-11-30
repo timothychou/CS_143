@@ -1,3 +1,13 @@
+"""
+icfire.networkobjects.link
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This module contains the objects that represent links in the network.
+Links connect different nodes and have buffers, data rates, and some sort
+of delay
+
+"""
+
 from icfire.event import LinkTickEvent, PacketEvent
 from icfire.networkobjects.networkobject import NetworkObject
 from icfire import logger

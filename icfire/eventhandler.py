@@ -1,4 +1,6 @@
-""" The EventHandler.
+"""
+icfire.eventhandler
+~~~~~~~~~~~~~~~~~~~
 
 EventHandler manages queueing Events and processing them in sequential order.
 
@@ -26,7 +28,13 @@ from tqdm import trange
 import icfire.logger as logger
 import icfire.timer as timer
 
-class EventHandler:
+
+class EventHandler(object):
+
+    """ The eventhandler class handles events and timers
+
+    It is reponsible for actually running the simulation
+    """
 
     def __init__(self, network, initialEvents=None):
         """ Constructor for an EventHandler.
@@ -52,8 +60,7 @@ class EventHandler:
 
         If the queue is empty, this will raise an Empty error.
         :param realtime: [optional] Set to true to simulate in real time
-        :param slowdown: [optional] factor to slow down the simulation.
-            Half the simulation rate with .5
+        :param slowdown: [optional] factor to slow down the simulation. Half the simulation rate with .5
         :return: The Event that was just processed.
         """
         # When we get an object from the queue, do not block if empty.
@@ -66,7 +73,7 @@ class EventHandler:
         #     waittime = event.timestamp - self.time
         #     if waittime < 0:
         #         logger.Log("Error: events are not occuring in order")
-        #     # wait for a maximum of 5 seconds
+        # wait for a maximum of 5 seconds
         #     time.sleep((waittime / 1000 / slowdown) % 5)
 
         # Log each event

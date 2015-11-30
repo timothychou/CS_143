@@ -1,8 +1,20 @@
+"""
+icfire.networkobjects.host
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This module contains the objects that represent computers and devices in
+the real world.
+
+Hosts own flows, and also keeps tabs on various stats through a stats objects.
+
+"""
+
 from icfire.event import PacketEvent, UpdateFlowEvent
 from icfire.networkobjects.networkobject import Node
 from icfire.packet import *
 from icfire.eventhandler import *
 from icfire.stats import HostStats
+
 from icfire import logger
 
 
@@ -109,8 +121,12 @@ class Host(Node):
 
         # Send packets
         newpackets, rto = f.checkTimeout(t)
-        return [PacketEvent(t, self, self.links[0], p,
-                            'Flow %s, packet %s from host %s to link %s' %
-                            (f.flowId, p.index, self.address, self.links[0].id))
-                for p in newpackets] + [UpdateFlowEvent(t + rto, self, f.flowId,
-                                                        'Check for timeout on flow %s' % f.flowId)]
+        packetEvents = \
+            [PacketEvent(t, self, self.links[0], p,
+                         'Flow %s, packet %s from host %s to link %s' %
+                         (f.flowId, p.index, self.address, self.links[0].id))
+             for p in newpackets]
+        packetEvents.append(
+            UpdateFlowEvent(t + rto, self, f.flowId,
+                            'Check for timeout on flow %s' % f.flowId))
+        return packetEvents

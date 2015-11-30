@@ -1,3 +1,20 @@
+"""
+icfire.flow
+~~~~~~~~~~~
+
+This module contains objects that represent connections between nodes that
+send data to each other.
+
+Flows should be owned by the sender host, and flow recipients should be
+owned by the destination. Various types of flows are implemented, including
+TCP_fast and TCP_Reno. Flows own their own stats objects which holds a record
+of various stats in the simulation
+
+Note that SuperSimpleFlow and SuperSimpleFlow2 are deprecated
+
+"""
+
+
 from icfire.packet import AckPacket
 from icfire.packet import DataPacket
 import logger
@@ -53,7 +70,6 @@ class Flow(object):
 
 
 class SuperSimpleFlow(Flow):
-
     """ The most basic type of Flow with window size 1."""
 
     def __init__(self, source_id, dest_id, bytes, flowId):

@@ -7,7 +7,10 @@ old/*
 doc/_*
 
 # sphinx build folder
-doc/build
+docs/build
+
+*.txt
+*.json
 
 # Compiled source #
 ###################
@@ -17,6 +20,7 @@ doc/build
 *.exe
 *.o
 *.so
+
 
 # Packages #
 ############
