@@ -59,7 +59,8 @@ if __name__ == '__main__':
                                           'H2': (tc1a.links['L5'], 3)}
 
     EventHandler(tc1a).run(1000000)
-    tc1a.flows['F1'].stats.analyze()
+    f1stats = tc1a.flows['F1'].stats
+    f1stats.analyze()
     tc1a.nodes['H1'].stats.analyze()
     # tc1a.links['L1'].stats.analyze()
     # plt.show()

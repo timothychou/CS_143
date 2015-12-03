@@ -150,7 +150,7 @@ class FlowStats(Stats):
         plt.legend()
 
         plt.figure()
-        plotrate(self.rttdelay, 30)
+        plotsmooth(self.rttdelay, 30)
         plt.ylabel("Round-trip delay (ms)")
         plt.title("Round-Trip delay in flow " +
                   str(self.parent_id))
@@ -158,7 +158,7 @@ class FlowStats(Stats):
         # don't plot for flows without a windowsize
         if self.windowsize:
             plt.figure()
-            plotrate(self.windowsize, 40)
+            plotsmooth(self.windowsize, 40)
             plt.title("Window size of flow " + str(self.parent_id))
             plt.ylabel("Window size")
 
@@ -260,6 +260,44 @@ def plotrate(datadict, resolution, **kwargs):
                 times.append(time)
                 rates.append(datatotal / float(resolution))
                 datatotal = 0
+                time += resolution
+
+    plt.plot(times, rates, **kwargs)
+    plt.xlabel("Time (ms)")
+    zeroxaxis()
+
+
+def plotsmooth(datadict, resolution, **kwargs):
+    """ Plots the value of a data point averaged over the interval
+
+    This works by creating discrete time interval and averaging all values
+    within said interval
+
+    :param datadict: dictionary of time-value pairs
+    :param resolution: interval in millisecond to aggregate over
+    :param kwargs: dictionary, or keyword arguments to be passed to pyplot
+    """
+    sortedtimes = sorted(datadict.keys())
+    sorteddata = [datadict[key] for key in sortedtimes]
+    assert(len(sortedtimes) == len(sorteddata))
+    time = 0
+    datatotal = 0
+    times = []
+    rates = []
+    count = 0
+    for i in range(len(sortedtimes)):
+        while(True):
+            if sortedtimes[i] < time:
+                datatotal += sorteddata[i]
+                count += 1
+                break
+            elif count > 0:
+                times.append(time)
+                rates.append(datatotal / count)
+                datatotal = 0
+                time += resolution
+                count = 0
+            else:
                 time += resolution
 
     plt.plot(times, rates, **kwargs)
