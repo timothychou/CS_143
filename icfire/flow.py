@@ -240,7 +240,7 @@ class TCPRenoFlow(Flow):
                 self.lastRepSent = max(self.lastRepSent, self.nextSend)
             elif self.fastrecovery and self.numLastAck > self.maxwnd:
                 # Timed out.
-                self._timeout()
+                self._timeout(timestamp)
             elif self.numLastAck > 4:
                 self.cwnd += 1
                 self.canum = 0
