@@ -277,7 +277,6 @@ class TCPRenoFlow(Flow):
                 if self.canum == self.cwnd:
                     self.cwnd += 1
                     self.canum = 0
-
         self.stats.updateCurrentWindowSize(timestamp, self.cwnd)
         return resend + self.sendPackets(timestamp)
 
@@ -354,11 +353,12 @@ class FastTCPFlow(TCPRenoFlow):
         # RTT calculator
         self.brtt = self.srtt
         self.rtt = 3000
-        self.lastTimestamp = 0
-
+        self.newRTT = False
+        
         # parameters for window control algorithm
         self.gamma = 1
         self.alpha = 20
+        self.cwndDouble = self.cwnd
 
     def receiveAckPacket(self, packet, timestamp):
         """ A new ACK number means that the next packet can be sent.
@@ -370,7 +370,7 @@ class FastTCPFlow(TCPRenoFlow):
         assert isinstance(packet, AckPacket)
         self.active = True
         resend = []
-
+        self.newRTT = True
         # Duplicate ACK
         if packet.index == self.lastAck:
             self.numLastAck += 1
@@ -378,21 +378,22 @@ class FastTCPFlow(TCPRenoFlow):
             # Fast Retransmit/Fast Recovery
             if self.numLastAck == 4:
                 resend = [DataPacket(self.source_id, self.dest_id, 
-                                     self.lastAck, self.flowId)]
+                                     self.lastAck, self.flowId, timestamp)]
+
                 self.fastrecovery = True
                 self.lastRepSent = max(self.lastRepSent, self.nextSend)
-            self.rtt = timestamp - self.lastTimestamp
+            self.rtt = timestamp - packet.timestamp
+            self.stats.addRTT(timestamp, self.rtt)
             self.brtt = min(self.brtt, self.rtt)
         
         # New ACK
         elif packet.index > self.lastAck:
             if packet.index - 1 > self.lastRepSent and \
                     not self.inflight[packet.index - 1][1]:
-                self.rtt = timestamp - self.inflight[packet.index - 1][0]
-                self.lastTimestamp = self.inflight[packet.index - 1][0]
+                self.rtt = timestamp - packet.timestamp
+                
                 self.stats.addRTT(timestamp, self.rtt)
                 self.brtt = min(self.brtt, self.rtt)
-
 
             for i in range(self.lastAck, packet.index):
                 self.inflight.pop(i)
@@ -407,6 +408,19 @@ class FastTCPFlow(TCPRenoFlow):
 
         return resend + self.sendPackets(timestamp)
 
+    def sendPackets(self, timestamp):
+        """ Send packets if window size allows it
+
+        :param timestamp: time that this occurs
+        :return:  A list of new packets
+        """
+        newpackets = super(FastTCPFlow, self).sendPackets(timestamp)
+
+        for p in newpackets:
+            p.timestamp = timestamp
+
+        return newpackets
+
     def processEvent(self, event):
         if isinstance(event, UpdateWindowEvent):
             return self._updateWindowSize(event)
@@ -415,10 +429,12 @@ class FastTCPFlow(TCPRenoFlow):
                 'Handling of %s not implemented' % event.__class__)
 
     def _updateWindowSize(self, event):
-
-        self.cwnd = int(min(2 * self.cwnd, (1 - self.gamma) * self.cwnd +
-                            self.gamma * self.brtt / self.rtt * self.cwnd + 
-                            self.alpha))
+        a = .9
+        if self.newRTT:
+            self.cwndDouble = (1 - a) * self.cwndDouble + (a) * 1.0 * self.brtt / self.rtt * self.cwnd + self.alpha
+        self.newRTT = False
+        self.cwnd = int(self.cwndDouble)
+        self.stats.updateCurrentWindowSize(event.timestamp, self.cwndDouble)
         return [UpdateWindowEvent(event.timestamp + 20, self, 
                                   logMessage='Updating window size on flow %s' % (self.flowId))]
 
@@ -451,4 +467,4 @@ class FlowRecipient(object):
 
         self.stats.addBytesRecieved(timestamp, packet.size)
         return AckPacket(packet.dest, packet.source,
-                         self.lastAck, packet.flowId)
+                         self.lastAck, packet.flowId, packet.timestamp)

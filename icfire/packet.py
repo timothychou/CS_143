@@ -41,10 +41,11 @@ class DataPacket(Packet):
     """ This class represents a packet transferring arbitrary data """
     size = 1024
 
-    def __init__(self, source, dest, index, flowId):
+    def __init__(self, source, dest, index, flowId, timestamp=None):
         super(self.__class__, self).__init__(source, dest, index, size=1024)
 
         self.flowId = flowId
+        self.timestamp = timestamp
 
 
 class AckPacket(Packet):
@@ -52,11 +53,12 @@ class AckPacket(Packet):
     """ This class represents an ack packet """
     size = 64
 
-    def __init__(self, source, dest, index, flowId):
+    def __init__(self, source, dest, index, flowId, timestamp=None):
         super(self.__class__, self).__init__(
             source, dest, index, size=64, ack=True)
 
         self.flowId = flowId
+        self.timestamp = timestamp
 
 
 class RoutingPacket(Packet):
