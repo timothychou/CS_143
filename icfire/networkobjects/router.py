@@ -1,3 +1,10 @@
+"""
+icfire.router
+~~~~~~~~~~~~~
+
+This module represents the routers
+"""
+
 import sys
 from icfire.event import PacketEvent, UpdateRoutingTableEvent
 from icfire.networkobjects.networkobject import Node
@@ -6,6 +13,7 @@ from icfire import logger
 
 
 class Router(Node):
+
     """ Represents router in a network
 
     This class represents a router in a network that is able to
@@ -40,33 +48,39 @@ class Router(Node):
         """
 
         # Data packet, forward to correct link
-        if isinstance(event.packet, DataPacket) or isinstance(event.packet, AckPacket):
+        if isinstance(event.packet, DataPacket) or \
+                isinstance(event.packet, AckPacket):
             nextLink = self.getRoute(event.packet.dest)
             if nextLink:
-                logger.log('Router %s forwards packet to %s' % (self.address, nextLink.id))
+                logger.log('Router %s forwards packet to %s' %
+                           (self.address, nextLink.id))
                 return nextLink.addPackets([event.packet], self)
             else:
-                logger.log('Router %s dropped packet %s' % (self.address, event.packet.index))
+                logger.log('Router %s dropped packet %s' %
+                           (self.address, event.packet.index))
 
         # Received routing table information, update table
         elif isinstance(event.packet, RoutingPacket):
             neighborTable = event.packet.routingTable
             link = event.sender
             cost = link.cost()
-            # overwrite parts of routing table that use neighbor 
+            # overwrite parts of routing table that use neighbor
             # where neighbor changed
             for dest in self.lookup_table.get(link, []):
-                self.routing_table[dest] = [link, 
+                self.routing_table[dest] = [link,
                                             neighborTable[dest][1] + cost]
-            
+
             # update new mins
             for dest, val in neighborTable.iteritems():
-                if self.routing_table.get(dest, [0, sys.maxint])[1] > (val[1] + cost):
+                if self.routing_table.get(dest, [0, sys.maxint])[1] \
+                        > (val[1] + cost):
                     if dest in self.routing_table:
-                        self.lookup_table[self.routing_table[dest][0]].remove(dest)
+                        self.lookup_table[
+                            self.routing_table[dest][0]].remove(dest)
 
                     self.routing_table[dest] = [link, val[1] + cost]
-                    self.lookup_table[link] = self.lookup_table.get(link, []) + [dest]
+                    self.lookup_table[link] = self.lookup_table.get(
+                        link, []) + [dest]
 
             # logger.log3(self.address + ' ' + str(self.routing_table))
 
@@ -100,12 +114,18 @@ class Router(Node):
         This method should be the result of an Event that informs
         the Router to update. Begins bellman ford on all nodes in the graph
         """
-        return [PacketEvent(event.timestamp + i*10, self, self.links[i],
-                            RoutingRequestPacket(self.address),
-                            'Routing table request packet for router %s' % self.address)
-                for i in xrange(len(self.links))] + \
-               [UpdateRoutingTableEvent(event.timestamp + 5000, self,
-                                        'Router %s updates routing table' % self.address)]
+        packetevents = \
+            [PacketEvent(event.timestamp + i * 10, self, self.links[i],
+                         RoutingRequestPacket(self.address),
+                         'Routing table request packet for router %s'
+                         % self.address)
+             for i in xrange(len(self.links))]
+
+        packetevents.append(
+            UpdateRoutingTableEvent(event.timestamp + 5000, self,
+                                    'Router %s updates routing table'
+                                    % self.address))
+        return packetevents
 
     def getRoute(self, destination):
         """checks routing table for route to destination"""

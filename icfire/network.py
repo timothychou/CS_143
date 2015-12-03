@@ -1,3 +1,16 @@
+"""
+icfire.network
+~~~~~~~~~~~
+
+This module models the network. It handles network object creation, importing
+and exporting, and later on it may have built in functions to analyze network
+wide statistics. For example, it is capable of drawing our network itself.
+
+Network requires the NetworkX package and is primarily a wrapper over NetworkX
+for much of importing and exporting
+
+"""
+
 import json
 
 import networkx as nx

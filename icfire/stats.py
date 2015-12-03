@@ -1,4 +1,9 @@
-""" Stats encapsulate the statistics and data of each node """
+"""
+icfire.stats
+~~~~~~~~~~~~
+Stats encapsulate the statistics and data of each node
+
+"""
 
 import pandas as pd
 import numpy as np
@@ -81,6 +86,7 @@ class FlowStats(Stats):
         self.bytessent = dict()
         self.bytesrecieved = dict()
         self.rttdelay = dict()
+        self.windowsize = dict()
 
     def addRTT(self, timestamp, rttd):
         """ Function called to aggregate data into the stats
@@ -112,6 +118,14 @@ class FlowStats(Stats):
         else:
             self.bytesrecieved[timestamp] = bytes
 
+    def updateCurrentWindowSize(self, timestamp, cwnd):
+        """ Function called to aggregate window size into stats
+
+        :param timestamp: time this occurred
+        :param cwnd: current window size
+        """
+        self.windowsize[timestamp] = cwnd
+
     def analyze(self):
         """ This script does a full analysis over the stats stored in a flow
             and plots graphs relevant the data.
@@ -140,6 +154,13 @@ class FlowStats(Stats):
         plt.ylabel("Round-trip delay (ms)")
         plt.title("Round-Trip delay in flow " +
                   str(self.parent_id))
+
+        # don't plot for flows without a windowsize
+        if self.windowsize:
+            plt.figure()
+            plotrate(self.windowsize, 40)
+            plt.title("Window size of flow " + str(self.parent_id))
+            plt.ylabel("Window size")
 
     def plot(self):
         """ Plots the raw data as a scatterplot """

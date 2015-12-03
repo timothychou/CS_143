@@ -278,6 +278,7 @@ class TCPRenoFlow(Flow):
                     self.cwnd += 1
                     self.canum = 0
 
+        self.stats.updateCurrentWindowSize(timestamp, self.cwnd)
         return resend + self.sendPackets(timestamp)
 
     def sendPackets(self, timestamp):
