@@ -13,7 +13,9 @@ def buildNetwork():
     h1 = tc0.addHost("H1")
     h2 = tc0.addHost("H2")
     tc0.addLink(h1, h2, rate=10, delay=10, buffsize=64, linkid='L1')
-    tc0.addFlow(h1, h2, 10000, 100, 'TCPRenoFlow', flowId='F1')
+    #flowType = 'TCPRenoFlow'
+    flowType = 'FastTCPFlow'
+    tc0.addFlow(h1, h2, 10000, 100, flowType, flowId='F1')
     # tc0.addFlow(h1, h2, 10000, 100, 'SuperSimpleFlow2')
     return tc0
 

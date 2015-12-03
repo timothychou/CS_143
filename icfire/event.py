@@ -78,6 +78,19 @@ class UpdateFlowEvent(Event):
         super(self.__class__, self).__init__(timestamp, host, logMessage)
         self.flowId = flowId
 
+class UpdateWindowEvent(Event):
+
+    """ Event that tells flow to update window size for fast-tcp
+    """
+
+    def __init__(self, timestamp, flow, logMessage=None):
+        """ Constructor for an Event.
+
+        :param timestamp: time (integer) representing when the Event occurs.
+        :param router: flow that needs to update its window size
+        :param logMessage: [optional] string describing the event for logging
+        """
+        super(self.__class__, self).__init__(timestamp, flow, logMessage)
 
 class UpdateRoutingTableEvent(Event):
 

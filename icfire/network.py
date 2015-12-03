@@ -8,7 +8,7 @@ from icfire import timer
 from icfire import logger
 
 import icfire.flow as flow
-from icfire.event import UpdateRoutingTableEvent, UpdateFlowEvent, GatherDataEvent
+from icfire.event import UpdateRoutingTableEvent, UpdateFlowEvent, GatherDataEvent, UpdateWindowEvent
 from icfire.networkobjects.link import Link
 from icfire.networkobjects.router import Router
 from icfire.networkobjects.host import Host
@@ -203,6 +203,11 @@ class Network(object):
         self.events.append(
             UpdateFlowEvent(timestamp, self.nodes[source_id], newFlowId,
                             'Initialize flow ' + repr(newFlowId)))
+
+        if flowType == 'FastTCPFlow':
+            self.events.append(UpdateWindowEvent(timestamp, 
+                                                 self.flows[newFlowId],
+                                                 logMessage='Updating window size on flow %s' % (f.flowId)))
         return newFlowId
 
     def loadFlows(self, filename=None):

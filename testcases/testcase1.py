@@ -27,8 +27,10 @@ def buildNetwork(static_routing=False):
     tc1.addLink(r2, r4, rate=10, delay=10, buffsize=64, linkid='L3')
     tc1.addLink(r3, r4, rate=10, delay=10, buffsize=64, linkid='L4')
     tc1.addLink(r4, h2, rate=12.5, delay=10, buffsize=64, linkid='L5')
+    #flowType = 'TCPRenoFlow'
+    flowType = 'FastTCPFlow'
     tc1.addFlow(h1, h2, bytes=20000000, timestamp=20000,
-                flowType='TCPRenoFlow', flowId='F1')
+                flowType=flowType, flowId='F1')
 
     return tc1
 

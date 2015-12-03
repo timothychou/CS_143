@@ -377,7 +377,6 @@ class FastTCPFlow(TCPRenoFlow):
             if self.numLastAck == 4:
                 resend = [DataPacket(self.source_id, self.dest_id, 
                                      self.lastAck, self.flowId)]
-                self.fastrecovery = True
                 self.lastRepSent = max(self.lastRepSent, self.nextSend)
             rtt = timestamp - self.lastTimestamp
             self._updateRTT(rtt)
@@ -399,9 +398,9 @@ class FastTCPFlow(TCPRenoFlow):
             self.nextSend = max(self.nextSend, self.lastAck)
             self.numLastAck = 1
             
-            # Exit fast recovery
-            if self.fastrecovery:
-                self.fastrecovery = False
+
+
+
 
         return resend + self.sendPackets(timestamp)
 
