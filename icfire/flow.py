@@ -352,6 +352,7 @@ class FastTCPFlow(TCPRenoFlow):
 
         # RTT calculator
         self.brtt = self.srtt
+        self.rtt = 3000
         self.lastTimestamp = 0
 
         # parameters for window control algorithm
@@ -379,18 +380,18 @@ class FastTCPFlow(TCPRenoFlow):
                                      self.lastAck, self.flowId)]
                 self.fastrecovery = True
                 self.lastRepSent = max(self.lastRepSent, self.nextSend)
-            rtt = timestamp - self.lastTimestamp
-            self._updateRTT(rtt)
+            self.rtt = timestamp - self.lastTimestamp
+            self.brtt = min(self.brtt, self.rtt)
         
         # New ACK
         elif packet.index > self.lastAck:
             if packet.index - 1 > self.lastRepSent and \
                     not self.inflight[packet.index - 1][1]:
-                rtt = timestamp - self.inflight[packet.index - 1][0]
+                self.rtt = timestamp - self.inflight[packet.index - 1][0]
                 self.lastTimestamp = self.inflight[packet.index - 1][0]
-                self.stats.addRTT(timestamp, rtt)
+                self.stats.addRTT(timestamp, self.rtt)
+                self.brtt = min(self.brtt, self.rtt)
 
-                self._updateRTT(rtt)
 
             for i in range(self.lastAck, packet.index):
                 self.inflight.pop(i)
@@ -415,27 +416,12 @@ class FastTCPFlow(TCPRenoFlow):
     def _updateWindowSize(self, event):
 
         self.cwnd = int(min(2 * self.cwnd, (1 - self.gamma) * self.cwnd +
-                            self.gamma * self.brtt / self.srtt * self.cwnd + 
+                            self.gamma * self.brtt / self.rtt * self.cwnd + 
                             self.alpha))
         return [UpdateWindowEvent(event.timestamp + 20, self, 
                                   logMessage='Updating window size on flow %s' % (self.flowId))]
 
-    def _updateRTT(self, rtt):
-        # http://netlab.caltech.edu/publications/FAST-ToN-final-060209-\2007.pdf                                                                        
-        nu = min(3.0 / self.cwnd, .25)
 
-        self.srtt = (1 - nu) * self.srtt + nu * rtt
-        self.brtt = min(self.srtt, self.brtt)
-
-                        
-    
-
-
-
-
-
-        
-                
                 
 
 class FlowRecipient(object):
