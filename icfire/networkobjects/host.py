@@ -12,7 +12,6 @@ Hosts own flows, and also keeps tabs on various stats through a stats objects.
 from icfire.event import PacketEvent, UpdateFlowEvent
 from icfire.networkobjects.networkobject import Node
 from icfire.packet import *
-from icfire.eventhandler import *
 from icfire.stats import HostStats
 
 from icfire import logger

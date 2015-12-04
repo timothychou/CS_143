@@ -8,11 +8,12 @@ of delay
 
 """
 
+from Queue import Queue
+
 from icfire.event import LinkTickEvent, PacketEvent
 from icfire.networkobjects.networkobject import NetworkObject
 from icfire import logger
 from icfire.stats import LinkStats
-from Queue import Queue
 import icfire.timer as timer
 
 
@@ -72,7 +73,8 @@ class Link(NetworkObject):
             else:
                 self.buffer.put((p, sender))
                 self.buffersize += p.size
-                self.stats.updateBufferOccupancy(timer.time, self.buffersize)
+
+        self.stats.updateBufferOccupancy(timer.time, self.buffersize)
 
         return newevents
 

@@ -6,6 +6,7 @@ This module represents the routers
 """
 
 import sys
+
 from icfire.event import PacketEvent, UpdateRoutingTableEvent
 from icfire.networkobjects.networkobject import Node
 from icfire.packet import RoutingPacket, RoutingRequestPacket, DataPacket, AckPacket
@@ -81,8 +82,6 @@ class Router(Node):
                     self.routing_table[dest] = [link, val[1] + cost]
                     self.lookup_table[link] = self.lookup_table.get(
                         link, []) + [dest]
-
-            # logger.log3(self.address + ' ' + str(self.routing_table))
 
         # Received routing table request
         elif isinstance(event.packet, RoutingRequestPacket):

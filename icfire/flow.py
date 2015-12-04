@@ -15,9 +15,9 @@ Note that SuperSimpleFlow and SuperSimpleFlow2 are deprecated
 """
 
 
+import logger
 from icfire.packet import AckPacket
 from icfire.packet import DataPacket
-import logger
 from icfire.stats import FlowStats
 from icfire.event import UpdateWindowEvent
 
@@ -42,6 +42,7 @@ class Flow(object):
         self.bytes = bytes
         self.flowId = flowId
         self.stats = FlowStats(flowId)
+        self.done = False
 
     def receiveAckPacket(self, packet, timestamp):
         """ Alter the flow state based on the ACK packet received.
@@ -261,6 +262,10 @@ class TCPRenoFlow(Flow):
             self.nextSend = max(self.nextSend, self.lastAck)
             self.numLastAck = 1
 
+            # Done
+            if self.lastAck == self.finalPacket:
+                self.done = True
+
             # Exit fast recovery
             if self.fastrecovery:
                 self.cwnd = self.ssthresh
@@ -278,7 +283,8 @@ class TCPRenoFlow(Flow):
                 if self.canum == self.cwnd:
                     self.cwnd += 1
                     self.canum = 0
-        self.stats.updateCurrentWindowSize(timestamp, self.cwnd)
+        if not self.done:
+            self.stats.updateCurrentWindowSize(timestamp, self.cwnd)
         return resend + self.sendPackets(timestamp)
 
     def sendPackets(self, timestamp):
@@ -293,9 +299,11 @@ class TCPRenoFlow(Flow):
                                        min(self.finalPacket, self.lastAck + self.cwnd))]
 
         # Set sent time for RTT calcs
+        totalbytes = 0
         for p in newpackets:
             self.inflight[p.index] = (timestamp, p.index in self.inflight)
-            self.stats.addBytesSent(timestamp, p.size)
+            totalbytes += p.size
+        self.stats.addBytesSent(timestamp, totalbytes)
 
         self.nextSend = max(self.nextSend, self.lastAck + self.cwnd)
 
@@ -306,7 +314,7 @@ class TCPRenoFlow(Flow):
 
         :param timestamp: time that this occurs
         """
-        if self.nextSend < self.finalPacket and timestamp > self.nextTimeout:
+        if not self.done and timestamp > self.nextTimeout:
             self.cwnd = 1
             self.canum = 0
             self.fastrecovery = False
@@ -359,7 +367,7 @@ class FastTCPFlow(TCPRenoFlow):
         self.brtt = self.srtt
         self.rtt = 250
         self.newRTT = False
-        
+
         # parameters for window control algorithm
         self.gamma = 1
         self.alpha = 20
@@ -382,16 +390,14 @@ class FastTCPFlow(TCPRenoFlow):
 
             # Fast Retransmit/Fast Recovery
             if self.numLastAck == 4:
-                resend = [DataPacket(self.source_id, self.dest_id, 
+                resend = [DataPacket(self.source_id, self.dest_id,
                                      self.lastAck, self.flowId, timestamp)]
 
                 self.fastrecovery = True
                 self.lastRepSent = max(self.lastRepSent, self.nextSend)
             self.rtt = timestamp - packet.timestamp
             self._updateRTT(self.rtt)
-            self.stats.addRTT(timestamp, self.srtt)
 
-        
         # New ACK
         elif packet.index > self.lastAck:
             if packet.index - 1 > self.lastRepSent and \
@@ -400,14 +406,17 @@ class FastTCPFlow(TCPRenoFlow):
                 self._updateRTT(self.rtt)
                 self.stats.addRTT(timestamp, self.srtt)
 
-
             for i in range(self.lastAck, packet.index):
                 self.inflight.pop(i)
 
             self.lastAck = packet.index
             self.nextSend = max(self.nextSend, self.lastAck)
             self.numLastAck = 1
-            
+
+            # Done
+            if self.lastAck == self.finalPacket:
+                self.done = True
+
             # Exit fast recovery
             if self.fastrecovery:
                 self.fastrecovery = False
@@ -441,9 +450,11 @@ class FastTCPFlow(TCPRenoFlow):
             self.cwndDouble = (1 - a) * self.cwndDouble + (a) * (1.0 * self.brtt / self.srtt * self.cwnd + self.alpha)
         self.newRTT = False
         self.cwnd = int(self.cwndDouble)
-        self.stats.updateCurrentWindowSize(event.timestamp, self.cwndDouble)
-        return [UpdateWindowEvent(event.timestamp + self.srtt, self, 
-                                  logMessage='Updating window size on flow %s' % (self.flowId))]
+        if not self.done:
+            self.stats.updateCurrentWindowSize(event.timestamp, self.cwndDouble)
+            return [UpdateWindowEvent(event.timestamp + self.srtt, self,
+                                      logMessage='Updating window size on flow %s' % (self.flowId))]
+        return []
 
     def _updateRTT(self, rtt):
         a = min(3.0 / self.cwnd, .25)

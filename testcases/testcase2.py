@@ -1,5 +1,6 @@
 import sys
 import os
+
 import matplotlib.pyplot as plt
 
 sys.path.append(os.path.dirname(os.getcwd()))
@@ -21,10 +22,10 @@ def buildNetwork(static_routing=False, flowType = 'TCPRenoFlow'):
     t1 = tc2.addHost("T1")
     t2 = tc2.addHost("T2")
     t3 = tc2.addHost("T3")
-    r1 = tc2.addRouter("R1", 0, static_routing=static_routing)
-    r2 = tc2.addRouter("R2", 1000, static_routing=static_routing)
-    r3 = tc2.addRouter("R3", 2000, static_routing=static_routing)
-    r4 = tc2.addRouter("R4", 3000, static_routing=static_routing)
+    r1 = tc2.addRouter("R1", -40000, static_routing=static_routing)
+    r2 = tc2.addRouter("R2", -39000, static_routing=static_routing)
+    r3 = tc2.addRouter("R3", -38000, static_routing=static_routing)
+    r4 = tc2.addRouter("R4", -37000, static_routing=static_routing)
     tc2.addLink(r1, r2, rate=10, delay=10, buffsize=128, linkid='L1')
     tc2.addLink(r2, r3, rate=10, delay=10, buffsize=128, linkid='L2')
     tc2.addLink(r3, r4, rate=10, delay=10, buffsize=128, linkid='L3')
@@ -34,13 +35,11 @@ def buildNetwork(static_routing=False, flowType = 'TCPRenoFlow'):
     tc2.addLink(t1, r4, rate=10, delay=10, buffsize=128, linkid='LT1')
     tc2.addLink(t2, r2, rate=10, delay=10, buffsize=128, linkid='LT2')
     tc2.addLink(t3, r4, rate=10, delay=10, buffsize=128, linkid='LT3')
-    # flowType = 'TCPRenoFlow'
-    # flowType = 'FastTCPFlow'
-    tc2.addFlow(s1, t1, bytes=35000000, timestamp=30500,
+    tc2.addFlow(s1, t1, bytes=35000000, timestamp=500,
                 flowType=flowType, flowId='F1')
-    tc2.addFlow(s2, t2, bytes=15000000, timestamp=40000,
+    tc2.addFlow(s2, t2, bytes=15000000, timestamp=10000,
                 flowType=flowType, flowId='F2')
-    tc2.addFlow(s3, t3, bytes=30000000, timestamp=50000,
+    tc2.addFlow(s3, t3, bytes=30000000, timestamp=20000,
                 flowType=flowType, flowId='F3')
 
     return tc2
@@ -86,7 +85,7 @@ if __name__ == '__main__':
                                           'T2': (tc2a.links['L3'], 3),
                                           'T3': (tc2a.links['LT3'], 3)}
 
-    EventHandler(tc2a).run(1000000)
+    EventHandler(tc2a).run(2000000)
 
     # graph flows
     flowinterval = 40
@@ -101,6 +100,8 @@ if __name__ == '__main__':
     stats.plotrate(f3stats.bytessent, flowinterval, label="F3")
     plt.title("Send rates in flows F1, F2, F3")
     plt.ylabel("Bytes/ms")
+    stats.zeroxaxis()
+    stats.zeroyaxis()
     plt.legend()
 
     # Byte Recieved Rate of all 3
@@ -110,6 +111,8 @@ if __name__ == '__main__':
     stats.plotrate(f3stats.bytesrecieved, flowinterval, label="F3")
     plt.title("Recieve rates in flows F1, F2, F3")
     plt.ylabel("Bytes/ms")
+    stats.zeroxaxis()
+    stats.zeroyaxis()
     plt.legend()
 
     # RTT of flows
@@ -119,17 +122,21 @@ if __name__ == '__main__':
     stats.plotsmooth(f3stats.rttdelay, flowinterval, label="F3")
     plt.title("Round Trip Time in flows F1, F2, F3")
     plt.ylabel("Time (ms)")
+    stats.zeroxaxis()
+    stats.zeroyaxis()
     plt.legend()
 
     # Window size (This will break if there is no window size)
     if flowType == 'FastTCPFlow' or flowType == 'TCPRenoFlow':
-      plt.figure()
-      stats.plotsmooth(f1stats.windowsize, flowinterval, label="F1")
-      stats.plotsmooth(f2stats.windowsize, flowinterval, label="F2")
-      stats.plotsmooth(f3stats.windowsize, flowinterval, label="F3")
-      plt.title("Window Times in flows F1, F2, F3")
-      plt.ylabel("Time (ms)")
-      plt.legend()
+        plt.figure()
+        stats.plotsmooth(f1stats.windowsize, flowinterval, label="F1")
+        stats.plotsmooth(f2stats.windowsize, flowinterval, label="F2")
+        stats.plotsmooth(f3stats.windowsize, flowinterval, label="F3")
+        plt.title("Window sizes in flows F1, F2, F3")
+        plt.ylabel("Size")
+        stats.zeroxaxis()
+        stats.zeroyaxis()
+        plt.legend()
 
     # Graph Link information
     linkinterval = 50
@@ -145,16 +152,19 @@ if __name__ == '__main__':
     plt.title("Byte flow rate in L1, L2, L3")
     plt.ylabel("Flow Rate (Bytes/ms)")
     stats.zeroxaxis()
-
-    plt.figure()
+    stats.zeroyaxis()
+    plt.legend()
 
     # link buffer occupancy
+    plt.figure()
     stats.plotsmooth(l1stats.bufferoccupancy, linkinterval, label="L1")
     stats.plotsmooth(l2stats.bufferoccupancy, linkinterval, label="L2")
     stats.plotsmooth(l3stats.bufferoccupancy, linkinterval, label="L3")
     plt.title("Buffer size in L1, L2, L3")
     plt.ylabel("Buffer Occupancy (Bytes)")
     stats.zeroxaxis()
+    stats.zeroyaxis()
+    plt.legend()
 
     # bytes lost
     plt.figure()
@@ -164,29 +174,27 @@ if __name__ == '__main__':
     plt.title("Packets lost in L1, L2, L3")
     plt.ylabel("Packets")
     stats.zeroxaxis()
+    stats.zeroyaxis()
+    plt.legend()
 
     # Plot source send and recieve rates
     s1stats = tc2a.nodes['S1'].stats
     s2stats = tc2a.nodes['S2'].stats
     s3stats = tc2a.nodes['S3'].stats
 
-        # Byte Send Rate of all 3
+    # Byte send/receive rate of all 3 sources
     sourceinterval = 40
     plt.figure()
-    stats.plotrate(s1stats.bytessent, sourceinterval, label="S1")
-    stats.plotrate(s2stats.bytessent, sourceinterval, label="S2")
-    stats.plotrate(s3stats.bytessent, sourceinterval, label="S3")
-    plt.title("Send rates in source nodes S1, S2, S3")
+    stats.plotrate(s1stats.bytessent, sourceinterval, label="S1-send")
+    stats.plotrate(s2stats.bytessent, sourceinterval, label="S2-send")
+    stats.plotrate(s3stats.bytessent, sourceinterval, label="S3-send")
+    stats.plotrate(s1stats.bytesrecieved, sourceinterval, label="S1-receive")
+    stats.plotrate(s2stats.bytesrecieved, sourceinterval, label="S2-receive")
+    stats.plotrate(s3stats.bytesrecieved, sourceinterval, label="S3-receive")
+    plt.title("Send/receive rates in source nodes S1, S2, S3")
     plt.ylabel("Bytes/ms")
-    plt.legend()
-
-    # Byte Recieved Rate of all 3
-    plt.figure()
-    stats.plotrate(s1stats.bytesrecieved, sourceinterval, label="S1")
-    stats.plotrate(s2stats.bytesrecieved, sourceinterval, label="S2")
-    stats.plotrate(s3stats.bytesrecieved, sourceinterval, label="S3")
-    plt.title("Recieve rates in source nodes S1, S2, S3")
-    plt.ylabel("Bytes/ms")
+    stats.zeroxaxis()
+    stats.zeroyaxis()
     plt.legend()
 
     # Plot sink send and recieve rates
@@ -194,24 +202,19 @@ if __name__ == '__main__':
     t2stats = tc2a.nodes['T2'].stats
     t3stats = tc2a.nodes['T3'].stats
 
-        # Byte Send Rate of all 3
+    # Byte send/receive rate of all 3 recipients
     sourceinterval = 40
     plt.figure()
-    stats.plotrate(t1stats.bytessent, sourceinterval, label="T1")
-    stats.plotrate(t2stats.bytessent, sourceinterval, label="T2")
-    stats.plotrate(t3stats.bytessent, sourceinterval, label="T3")
-    plt.title("Send rates in source nodes T1, T2, T3")
+    stats.plotrate(t1stats.bytessent, sourceinterval, label="T1-send")
+    stats.plotrate(t2stats.bytessent, sourceinterval, label="T2-send")
+    stats.plotrate(t3stats.bytessent, sourceinterval, label="T3-send")
+    stats.plotrate(t1stats.bytesrecieved, sourceinterval, label="T1-receive")
+    stats.plotrate(t2stats.bytesrecieved, sourceinterval, label="T2-receive")
+    stats.plotrate(t3stats.bytesrecieved, sourceinterval, label="T3-receive")
+    plt.title("Send/receive rates in recipient nodes T1, T2, T3")
     plt.ylabel("Bytes/ms")
+    stats.zeroxaxis()
+    stats.zeroyaxis()
     plt.legend()
-
-    # Byte Recieved Rate of all 3
-    plt.figure()
-    stats.plotrate(t1stats.bytesrecieved, sourceinterval, label="T1")
-    stats.plotrate(t2stats.bytesrecieved, sourceinterval, label="T2")
-    stats.plotrate(t3stats.bytesrecieved, sourceinterval, label="T3")
-    plt.title("Recieve rates in source nodes T1, T2, T3")
-    plt.ylabel("Bytes/ms")
-    plt.legend()
-
 
     plt.show()

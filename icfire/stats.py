@@ -5,10 +5,8 @@ Stats encapsulate the statistics and data of each node
 
 """
 
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.fftpack import diff
 from scipy import ndimage
 
 
@@ -204,7 +202,7 @@ class LinkStats(Stats):
             self.bytesflowed[timestamp] = bytes
 
     def updateBufferOccupancy(self, timestamp, buffersize):
-            self.bufferoccupancy[timestamp] = buffersize
+        self.bufferoccupancy[timestamp] = buffersize
 
     def analyze(self, interval=40):
         plt.figure()
@@ -371,6 +369,15 @@ def zeroxaxis():
     cumaxis = list(plt.axis())
     cumaxis[0] = 0
     plt.axis(cumaxis)
+
+
+def zeroyaxis():
+    """ Sets the left hand side of the axis to 0
+    """
+    cumaxis = list(plt.axis())
+    cumaxis[2] = 0
+    plt.axis(cumaxis)
+
 
 """ The following functions are experimental. Do not use """
 

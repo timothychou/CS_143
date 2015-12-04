@@ -121,22 +121,6 @@ class LinkTickEvent(Event):
         super(self.__class__, self).__init__(timestamp, link, logMessage)
 
 
-# Will deprecate
-class GatherDataEvent(Event):
-
-    """ Event that tells the Network to gather networkobject data. """
-
-    def __init__(self, timestamp, network, logMessage=None):
-        """ Constructor for an Event.
-
-        :param timestamp: time (integer) representing when the Event occurs.
-        :param network: Network to gather data for.
-        :param logMessage: [optional] string describing the event for
-            logging purposes.
-        """
-        super(self.__class__, self).__init__(timestamp, network, logMessage)
-
-
 globalid = 0
 
 

@@ -2,6 +2,7 @@
 import sys
 import os
 import unittest
+
 from icfire.networkobjects.host import Host
 from icfire.networkobjects.networkobject import NetworkObject
 from icfire.networkobjects.link import Link

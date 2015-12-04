@@ -1,4 +1,4 @@
 """ Keep track of time
 """
 
-time = 0
+time = -9999999

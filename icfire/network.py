@@ -14,18 +14,14 @@ for much of importing and exporting
 import json
 
 import networkx as nx
-
-import matplotlib.pyplot as plt
 from networkx.readwrite import json_graph
-from icfire import timer
-from icfire import logger
 
+from icfire import logger
 import icfire.flow as flow
-from icfire.event import UpdateRoutingTableEvent, UpdateFlowEvent, GatherDataEvent, UpdateWindowEvent
+from icfire.event import UpdateRoutingTableEvent, UpdateFlowEvent, UpdateWindowEvent
 from icfire.networkobjects.link import Link
 from icfire.networkobjects.router import Router
 from icfire.networkobjects.host import Host
-from icfire import plot
 from icfire.stats import *
 
 
@@ -48,7 +44,7 @@ class Network(object):
         self.nodes = dict()
         self.links = dict()
         self.flows = dict()
-        self.events = [GatherDataEvent(0, self, 'Gathering data on network.')]
+        self.events = []
         self.last_node = 0
         self.last_link = 0
         self.last_flow = 0
@@ -219,7 +215,7 @@ class Network(object):
                             'Initialize flow ' + repr(newFlowId)))
 
         if flowType == 'FastTCPFlow':
-            self.events.append(UpdateWindowEvent(timestamp, 
+            self.events.append(UpdateWindowEvent(timestamp,
                                                  self.flows[newFlowId],
                                                  logMessage='Updating window size on flow %s' % (f.flowId)))
         return newFlowId
@@ -333,36 +329,5 @@ class Network(object):
         :param event: Event to be processed.
         :return: list of new Events to be enqueued.
         """
-        if isinstance(event, GatherDataEvent):
-            self._gatherData()
-            return [GatherDataEvent(event.timestamp + self.gathertick, self,
-                                    'Gathering data on network.')]
-        else:
-            raise NotImplementedError(
-                'Network should only receive GatherDataEvents')
-
-    def _gatherData(self):
-        self.times.append(timer.time)
-
-        for f in self.flows:
-            self.data['%s-cwnd' % str(f)].append(self.flows[f].cwnd)
-            self.data['%s-rate' %
-                      str(f)].append(self.flows[f].cwnd / self.flows[f].srtt)
-            self.data['%s-rtt' % str(f)].append(self.flows[f].srtt)
-        for l in self.links:
-            self.data['%s-buf' % str(l)].append(self.links[l].buffersize)
-
-    def analyze(self):
-        pass
-        # Analyze
-
-    def graph(self):
-        # Charlie
-        plot.plotShit([([str(f) + '-cwnd', 'time (ms)', 'window (packets)'],
-                        self.times, self.data[str(f) + '-cwnd']) for f in self.flows], True)
-        plot.plotShit([([str(f) + '-rtt', 'time (ms)', 'rtt (ms)'],
-                        self.times, self.data[str(f) + '-rtt']) for f in self.flows], True)
-        plot.plotShit([(['%s-buf' % str(l), 'time (ms)', 'buffer (bytes)'],
-                        self.times,
-                        self.data['%s-buf' % str(l)])
-                       for l in self.links], True)
+        raise NotImplementedError(
+            'Network should only receive GatherDataEvents')

@@ -24,7 +24,9 @@ processEvent() should also return a list of new Events to enqueue.
 """
 
 from Queue import PriorityQueue
+
 from tqdm import trange
+
 import icfire.logger as logger
 import icfire.timer as timer
 
@@ -86,17 +88,29 @@ class EventHandler(object):
         self.time = event.timestamp
         return event
 
+    def completed(self):
+        """ Check whether simulation is completed
+        :return: true if all flows are done
+        """
+        for flow_id in self._network.flows:
+            if not self._network.flows[flow_id].done:
+                return False
+        return True
+
     def run(self, steps=0):
         """
         :param steps: [optional] Maximum number of steps to take.
             If 0, the simulation runs until completion.
-        :return:
         """
 
         # If interval is 0 we branch and to avoid calling time.sleep(0)
         if steps == 0:
-            while not self._queue.Empty():
+            while not self._queue.empty():
                 self.step()
+                if self.completed():
+                    break
         else:
             for _ in trange(steps):
                 self.step()
+                if self.completed():
+                    break
