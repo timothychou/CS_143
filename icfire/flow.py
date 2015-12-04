@@ -185,6 +185,7 @@ class TCPRenoFlow(Flow):
         self.lastAck = 0
         self.numLastAck = 1
         self.nextSend = 0       # Packet number of next packet to send
+        self.finalPacket = self.bytes / 1024
 
         # TCP Reno specific (FRT/FR)
         self.ssthresh = 1000
@@ -288,7 +289,8 @@ class TCPRenoFlow(Flow):
         """
 
         newpackets = [DataPacket(self.source_id, self.dest_id, ind, self.flowId)
-                      for ind in range(self.nextSend, self.lastAck + self.cwnd)]
+                      for ind in range(self.nextSend,
+                                       min(self.finalPacket, self.lastAck + self.cwnd))]
 
         # Set sent time for RTT calcs
         for p in newpackets:
@@ -304,7 +306,7 @@ class TCPRenoFlow(Flow):
 
         :param timestamp: time that this occurs
         """
-        if timestamp > self.nextTimeout:
+        if self.nextSend < self.finalPacket and timestamp > self.nextTimeout:
             self.cwnd = 1
             self.canum = 0
             self.fastrecovery = False
