@@ -124,7 +124,7 @@ class FlowStats(Stats):
         """
         self.windowsize[timestamp] = cwnd
 
-    def analyze(self, interval=40):
+    def analyze(self, interval=40, sameFigure=True):
         """ This script does a full analysis over the stats stored in a flow
             and plots graphs relevant the data.
 
@@ -132,33 +132,54 @@ class FlowStats(Stats):
             such as aggregating data from various links
         """
         plt.figure()
-        plotcumsum(self.bytessent, label="bytes sent")
-        plotcumsum(self.bytesrecieved, label="bytes recieved")
+        if sameFigure:
+            rows = 3
+            if self.windowsize:
+                rows += 1
+            plt.subplot(rows, 1, 1)
+
+        plotcumsum(self.bytessent, not sameFigure, label="bytes sent")
+        plotcumsum(self.bytesrecieved, not sameFigure, label="bytes recieved")
         plt.title("Cumulative Bytes sent and recieved in flow " +
                   str(self.parent_id))
         plt.ylabel("Bytes")
         plt.legend()
 
-        plt.figure()
-        plotrate(self.bytessent, interval, label="sent")
-        plotrate(self.bytesrecieved, interval, label="breceived")
+        if sameFigure:
+            plt.subplot(rows, 1, 2)
+
+        else:
+            plt.figure()
+        plotrate(self.bytessent, interval, not sameFigure, label="sent")
+        plotrate(self.bytesrecieved, interval, not sameFigure, label="breceived")
         plt.title("Send and recieve data rates in flow " +
                   str(self.parent_id))
         plt.ylabel("Bytes/ms")
         plt.legend()
 
-        plt.figure()
-        plotsmooth(self.rttdelay, interval)
+        isBottom = True
+        if sameFigure:
+            plt.subplot(rows, 1, 3)
+            if self.windowsize:
+                isBottom = False
+        else:
+            plt.figure()
+        plotsmooth(self.rttdelay, interval, isBottom)
         plt.ylabel("Round-trip delay (ms)")
         plt.title("Round-Trip delay in flow " +
                   str(self.parent_id))
 
         # don't plot for flows without a windowsize
         if self.windowsize:
-            plt.figure()
+            if sameFigure:
+                plt.subplot(rows, 1, 4)
+                plt.xlabel('Time (ms)')
+            else:
+                plt.figure()
             plotsmooth(self.windowsize, interval)
             plt.title("Window size of flow " + str(self.parent_id))
             plt.ylabel("Window size")
+        plt.subplots_adjust(hspace=0.5)
 
     def plot(self):
         """ Plots the raw data as a scatterplot """
@@ -204,26 +225,40 @@ class LinkStats(Stats):
     def updateBufferOccupancy(self, timestamp, buffersize):
         self.bufferoccupancy[timestamp] = buffersize
 
-    def analyze(self, interval=40):
+    def analyze(self, interval=40, sameFigure=True):
         plt.figure()
-        plotrate(self.bytesflowed, interval)
+        if sameFigure:
+            plt.subplot(4,1,1)
+        plotrate(self.bytesflowed, interval, not sameFigure)
         plt.title("Byte flow rate through link " +
                   str(self.parent_id))
         plt.ylabel("Flow Rate (Byte/ms)")
 
         # Plots Cumulative
-        plt.figure()
-        plotcumsum(self.bytesflowed)
+        
+        if sameFigure:
+            plt.subplot(4,1,2)
+        else:
+            plt.figure()
+        
+        plotcumsum(self.bytesflowed, not sameFigure)
         plt.title("Cummulative byte flow through link " +
                   str(self.parent_id))
         plt.ylabel("Bytes")
-        plt.figure()
-        plotintervalsum(self.lostpackets, interval)
+
+        if sameFigure:
+            plt.subplot(4,1,3)
+        else:
+            plt.figure()
+        plotintervalsum(self.lostpackets, interval, not sameFigure)
         plt.title("Packets lost in link " +
                   str(self.parent_id))
         plt.ylabel("Packets")
 
-        plt.figure()
+        if sameFigure:
+            plt.subplot(4,1,4)
+        else:
+            plt.figure()
         plotrate(self.bufferoccupancy, interval)
         plt.title("Buffer occupancy in link " +
                   str(self.parent_id))
@@ -232,7 +267,7 @@ class LinkStats(Stats):
 """ Helper Functions """
 
 
-def plotrate(datadict, resolution, **kwargs):
+def plotrate(datadict, resolution, xlabel=True, **kwargs):
     """ Plots the rate of data value averaged over a time interval
 
     This works by creating discrete time interval and averaging all values
@@ -261,11 +296,12 @@ def plotrate(datadict, resolution, **kwargs):
                 time += resolution
 
     plt.plot(times, rates, **kwargs)
-    plt.xlabel("Time (ms)")
+    if xlabel:
+        plt.xlabel("Time (ms)")
     zeroxaxis()
 
 
-def plotsmooth(datadict, resolution, **kwargs):
+def plotsmooth(datadict, resolution, xlabel=True, **kwargs):
     """ Plots the value of a data point averaged over the interval
 
     This works by creating discrete time interval and averaging all values
@@ -299,11 +335,12 @@ def plotsmooth(datadict, resolution, **kwargs):
                 time += resolution
 
     plt.plot(times, rates, **kwargs)
-    plt.xlabel("Time (ms)")
+    if xlabel:
+        plt.xlabel("Time (ms)")
     zeroxaxis()
 
 
-def plotintervalsum(datadict, resolution, **kwargs):
+def plotintervalsum(datadict, resolution, xlabel=True, **kwargs):
     """ Plots the sum of data value aggregated over a time interval
 
     This works by creating discrete time interval and summing all values
@@ -332,11 +369,12 @@ def plotintervalsum(datadict, resolution, **kwargs):
                 time += resolution
 
     plt.plot(times, rates, **kwargs)
-    plt.xlabel("Time (ms)")
+    if xlabel:
+        plt.xlabel("Time (ms)")
     zeroxaxis()
 
 
-def plotcumsum(datadict, **kwargs):
+def plotcumsum(datadict, xlabel=True, **kwargs):
     """ Plots a cumulative sum
 
     :param datadict: dictionary of time-value pairs
@@ -348,18 +386,20 @@ def plotcumsum(datadict, **kwargs):
     cumsum = np.cumsum(sorteddata)
 
     plt.plot(sortedtimes, cumsum, **kwargs)
-    plt.xlabel("Time (ms)")
+    if xlabel:
+        plt.xlabel("Time (ms)")
     zeroxaxis()
 
 
-def plotraw(datadict, **kwargs):
+def plotraw(datadict, xlabel=True, **kwargs):
     """ Plots the raw data
 
     :param datadict: dictionary of time-value pairs
     :param kwargs: dictionary, or keyword arguments to be passed to pyplot
     """
     plt.scatter(datadict.keys(), datadict.values())
-    plt.xlabel("Time (ms)")
+    if xlabel:
+        plt.xlabel("Time (ms)")
     zeroxaxis()
 
 
