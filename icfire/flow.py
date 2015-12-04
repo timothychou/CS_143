@@ -284,7 +284,10 @@ class TCPRenoFlow(Flow):
                     self.cwnd += 1
                     self.canum = 0
         if not self.done:
-            self.stats.updateCurrentWindowSize(timestamp, self.cwnd)
+            if self.fastrecovery:
+                self.stats.updateCurrentWindowSize(timestamp, self.ssthresh)
+            else:
+                self.stats.updateCurrentWindowSize(timestamp, self.cwnd)
         return resend + self.sendPackets(timestamp)
 
     def sendPackets(self, timestamp):
