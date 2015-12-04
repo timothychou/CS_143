@@ -351,8 +351,9 @@ class FastTCPFlow(TCPRenoFlow):
         super(FastTCPFlow, self).__init__(source_id, dest_id, bytes, flowId)
 
         # RTT calculator
+        self.srtt = 250
         self.brtt = self.srtt
-        self.rtt = 3000
+        self.rtt = 250
         self.newRTT = False
         
         # parameters for window control algorithm
@@ -383,17 +384,18 @@ class FastTCPFlow(TCPRenoFlow):
                 self.fastrecovery = True
                 self.lastRepSent = max(self.lastRepSent, self.nextSend)
             self.rtt = timestamp - packet.timestamp
-            self.stats.addRTT(timestamp, self.rtt)
-            self.brtt = min(self.brtt, self.rtt)
+            self._updateRTT(self.rtt)
+            self.stats.addRTT(timestamp, self.srtt)
+
         
         # New ACK
         elif packet.index > self.lastAck:
             if packet.index - 1 > self.lastRepSent and \
                     not self.inflight[packet.index - 1][1]:
                 self.rtt = timestamp - packet.timestamp
-                
-                self.stats.addRTT(timestamp, self.rtt)
-                self.brtt = min(self.brtt, self.rtt)
+                self._updateRTT(self.rtt)
+                self.stats.addRTT(timestamp, self.srtt)
+
 
             for i in range(self.lastAck, packet.index):
                 self.inflight.pop(i)
@@ -430,14 +432,19 @@ class FastTCPFlow(TCPRenoFlow):
 
     def _updateWindowSize(self, event):
         a = .9
+        self.rtt = self.srtt
         if self.newRTT:
-            self.cwndDouble = (1 - a) * self.cwndDouble + (a) * 1.0 * self.brtt / self.rtt * self.cwnd + self.alpha
+            self.cwndDouble = (1 - a) * self.cwndDouble + (a) * (1.0 * self.brtt / self.srtt * self.cwnd + self.alpha)
         self.newRTT = False
         self.cwnd = int(self.cwndDouble)
         self.stats.updateCurrentWindowSize(event.timestamp, self.cwndDouble)
-        return [UpdateWindowEvent(event.timestamp + 20, self, 
+        return [UpdateWindowEvent(event.timestamp + self.srtt, self, 
                                   logMessage='Updating window size on flow %s' % (self.flowId))]
 
+    def _updateRTT(self, rtt):
+        a = min(3.0 / self.cwnd, .25)
+        self.srtt = self.srtt * (1 - a) + (a) * rtt
+        self.brtt = min(self.brtt, self.srtt)
 
                 
 
