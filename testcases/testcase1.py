@@ -18,19 +18,19 @@ def buildNetwork(static_routing=False):
     tc1 = Network()
     h1 = tc1.addHost("H1")
     h2 = tc1.addHost("H2")
-    r1 = tc1.addRouter("R1", 0, static_routing=static_routing)
-    r2 = tc1.addRouter("R2", 100, static_routing=static_routing)
-    r3 = tc1.addRouter("R3", 200, static_routing=static_routing)
-    r4 = tc1.addRouter("R4", 300, static_routing=static_routing)
+    r1 = tc1.addRouter("R1", -30000, static_routing=static_routing)
+    r2 = tc1.addRouter("R2", -29000, static_routing=static_routing)
+    r3 = tc1.addRouter("R3", -28000, static_routing=static_routing)
+    r4 = tc1.addRouter("R4", -27000, static_routing=static_routing)
     tc1.addLink(h1, r1, rate=12.5, delay=10, buffsize=64, linkid='L0')
     tc1.addLink(r1, r2, rate=10, delay=10, buffsize=64, linkid='L1')
     tc1.addLink(r1, r3, rate=10, delay=10, buffsize=64, linkid='L2')
     tc1.addLink(r2, r4, rate=10, delay=10, buffsize=64, linkid='L3')
     tc1.addLink(r3, r4, rate=10, delay=10, buffsize=64, linkid='L4')
     tc1.addLink(r4, h2, rate=12.5, delay=10, buffsize=64, linkid='L5')
-    #flowType = 'TCPRenoFlow'
+    # flowType = 'TCPRenoFlow'
     flowType = 'FastTCPFlow'
-    tc1.addFlow(h1, h2, bytes=20000000, timestamp=20000,
+    tc1.addFlow(h1, h2, bytes=20000000, timestamp=500,
                 flowType=flowType, flowId='F1')
 
     return tc1
