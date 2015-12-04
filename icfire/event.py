@@ -137,24 +137,6 @@ class GatherDataEvent(Event):
         super(self.__class__, self).__init__(timestamp, network, logMessage)
 
 
-class StatsEvent(Event):
-
-    """ Event that times collecting stats from network objects and flows. """
-
-    def __init__(self, timestamp, EventHandler, logMessage=None):
-        """ Constructor for an Event.
-        The StatsEvent is handled by the EventHandler itself.
-
-        :param timestamp: time (integer) representing when the Event occurs.
-        :param link: Link that needs to send another packet.
-        :param logMessage: [optional] string describing the event for
-            logging purposes.
-        """
-
-        super(self.__class__, self).__init__(
-            timestamp, EventHandler, logMessage)
-
-
 globalid = 0
 
 

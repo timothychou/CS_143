@@ -34,8 +34,8 @@ def buildNetwork(static_routing=False):
     tc2.addLink(t1, r4, rate=10, delay=10, buffsize=128, linkid='LT1')
     tc2.addLink(t2, r2, rate=10, delay=10, buffsize=128, linkid='LT2')
     tc2.addLink(t3, r4, rate=10, delay=10, buffsize=128, linkid='LT3')
-    flowType = 'TCPRenoFlow'
-    # flowType = 'FastTCPFlow'
+    # flowType = 'TCPRenoFlow'
+    flowType = 'FastTCPFlow'
     tc2.addFlow(s1, t1, bytes=35000000, timestamp=30500,
                 flowType=flowType, flowId='F1')
     tc2.addFlow(s2, t2, bytes=15000000, timestamp=40000,
@@ -86,8 +86,15 @@ if __name__ == '__main__':
                                           'T3': (tc2a.links['LT3'], 3)}
 
     EventHandler(tc2a).run(1000000)
+
+    # tc2a.graph()
+
     f1stats = tc2a.flows['F1'].stats
+    f2stats = tc2a.flows['F2'].stats
+    f3stats = tc2a.flows['F3'].stats
     f1stats.analyze()
+    f2stats.analyze()
+    f3stats.analyze()
     tc2a.nodes['S1'].stats.analyze()
     # tc1a.links['L1'].stats.analyze()
     # plt.show()

@@ -207,6 +207,7 @@ class Network(object):
         self.flows[newFlowId] = f
         self.data['%s-cwnd' % newFlowId] = []
         self.data['%s-rate' % newFlowId] = []
+        self.data['%s-rtt' % newFlowId] = []
 
         self.nodes[source_id].addFlow(f)
         fr = flow.FlowRecipient(newFlowId, f.stats)
@@ -347,6 +348,7 @@ class Network(object):
             self.data['%s-cwnd' % str(f)].append(self.flows[f].cwnd)
             self.data['%s-rate' %
                       str(f)].append(self.flows[f].cwnd / self.flows[f].srtt)
+            self.data['%s-rtt' % str(f)].append(self.flows[f].srtt)
         for l in self.links:
             self.data['%s-buf' % str(l)].append(self.links[l].buffersize)
 
@@ -357,7 +359,9 @@ class Network(object):
     def graph(self):
         # Charlie
         plot.plotShit([([str(f) + '-cwnd', 'time (ms)', 'window (packets)'],
-                        self.times, self.data[str(f) + '-cwnd']) for f in self.flows], False)
+                        self.times, self.data[str(f) + '-cwnd']) for f in self.flows], True)
+        plot.plotShit([([str(f) + '-rtt', 'time (ms)', 'rtt (ms)'],
+                        self.times, self.data[str(f) + '-rtt']) for f in self.flows], True)
         plot.plotShit([(['%s-buf' % str(l), 'time (ms)', 'buffer (bytes)'],
                         self.times,
                         self.data['%s-buf' % str(l)])

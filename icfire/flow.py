@@ -187,7 +187,7 @@ class TCPRenoFlow(Flow):
         self.nextSend = 0       # Packet number of next packet to send
 
         # TCP Reno specific (FRT/FR)
-        self.ssthresh = 200
+        self.ssthresh = 1000
         self.cwnd = 1
         self.canum = 0
         self.fastrecovery = False
@@ -308,6 +308,8 @@ class TCPRenoFlow(Flow):
             self.cwnd = 1
             self.canum = 0
             self.fastrecovery = False
+
+            self.lastRepSent = max(self.lastRepSent, self.nextSend)
 
             self.nextSend = self.lastAck
             self.ssthresh = max(self.cwnd / 2, 2)
@@ -446,7 +448,6 @@ class FastTCPFlow(TCPRenoFlow):
         self.srtt = self.srtt * (1 - a) + (a) * rtt
         self.brtt = min(self.brtt, self.srtt)
 
-                
 
 class FlowRecipient(object):
 
@@ -455,8 +456,8 @@ class FlowRecipient(object):
     def __init__(self, flowId, stats):
         self.flowId = flowId
 
-        self.received = []  # List of received packet indices
-        self.lastAck = 0    # Last ack index sent (expected next packet index)
+        self.received = set()   # List of received packet indices
+        self.lastAck = 0        # Last ack index sent (expected next packet index)
         self.stats = stats
 
     def receiveDataPacket(self, packet, timestamp):
@@ -467,7 +468,8 @@ class FlowRecipient(object):
         :return: new AckPacket
         """
         self.stats.addBytesRecieved(timestamp, packet.size)
-        self.received.append(packet.index)
+        if packet.index >= self.lastAck:
+            self.received |= {packet.index}
         while self.lastAck in self.received:
             self.received.remove(self.lastAck)
             self.lastAck += 1
@@ -475,3 +477,4 @@ class FlowRecipient(object):
         self.stats.addBytesRecieved(timestamp, packet.size)
         return AckPacket(packet.dest, packet.source,
                          self.lastAck, packet.flowId, packet.timestamp)
+
