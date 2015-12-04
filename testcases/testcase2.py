@@ -9,7 +9,7 @@ from icfire.eventhandler import EventHandler
 import icfire.stats as stats
 
 
-def buildNetwork(static_routing=False):
+def buildNetwork(static_routing=False, flowType = 'TCPRenoFlow'):
     """ This function builds the network for the test case
 
     :param static_routing whether to use dyanamic or static routing table
@@ -35,7 +35,7 @@ def buildNetwork(static_routing=False):
     tc2.addLink(t2, r2, rate=10, delay=10, buffsize=128, linkid='LT2')
     tc2.addLink(t3, r4, rate=10, delay=10, buffsize=128, linkid='LT3')
     # flowType = 'TCPRenoFlow'
-    flowType = 'FastTCPFlow'
+    # flowType = 'FastTCPFlow'
     tc2.addFlow(s1, t1, bytes=35000000, timestamp=30500,
                 flowType=flowType, flowId='F1')
     tc2.addFlow(s2, t2, bytes=15000000, timestamp=40000,
@@ -49,7 +49,8 @@ def buildNetwork(static_routing=False):
 if __name__ == '__main__':
     filename = 'testcase2.json'
     static_routing = False
-    tc2 = buildNetwork(static_routing)
+    flowType = 'FastTCPFlow'
+    tc2 = buildNetwork(static_routing, flowType)
     # tc1.save(filename)
     # tc1.draw()
 
@@ -87,40 +88,130 @@ if __name__ == '__main__':
 
     EventHandler(tc2a).run(1000000)
 
-    # tc2a.graph()
-
+    # graph flows
+    flowinterval = 40
     f1stats = tc2a.flows['F1'].stats
     f2stats = tc2a.flows['F2'].stats
     f3stats = tc2a.flows['F3'].stats
-    f1stats.analyze()
-    f2stats.analyze()
-    f3stats.analyze()
-    tc2a.nodes['S1'].stats.analyze()
-    # tc1a.links['L1'].stats.analyze()
-    # plt.show()
 
+    # Byte Send Rate of all 3
     plt.figure()
-    link1flowrate = tc2a.links['L1'].stats.bytesflowed
-    link2flowrate = tc2a.links['L2'].stats.bytesflowed
-    link3flowrate = tc2a.links['L3'].stats.bytesflowed
+    stats.plotrate(f1stats.bytessent, flowinterval, label="F1")
+    stats.plotrate(f2stats.bytessent, flowinterval, label="F2")
+    stats.plotrate(f3stats.bytessent, flowinterval, label="F3")
+    plt.title("Send rates in flows F1, F2, F3")
+    plt.ylabel("Bytes/ms")
+    plt.legend()
 
-    stats.plotrate(link1flowrate, 50, label="L1")
-    stats.plotrate(link2flowrate, 50, label="L2")
-    stats.plotrate(link3flowrate, 50, label="L3")
+    # Byte Recieved Rate of all 3
+    plt.figure()
+    stats.plotrate(f1stats.bytesrecieved, flowinterval, label="F1")
+    stats.plotrate(f2stats.bytesrecieved, flowinterval, label="F2")
+    stats.plotrate(f3stats.bytesrecieved, flowinterval, label="F3")
+    plt.title("Recieve rates in flows F1, F2, F3")
+    plt.ylabel("Bytes/ms")
+    plt.legend()
+
+    # RTT of flows
+    plt.figure()
+    stats.plotsmooth(f1stats.rttdelay, flowinterval, label="F1")
+    stats.plotsmooth(f2stats.rttdelay, flowinterval, label="F2")
+    stats.plotsmooth(f3stats.rttdelay, flowinterval, label="F3")
+    plt.title("Round Trip Time in flows F1, F2, F3")
+    plt.ylabel("Time (ms)")
+    plt.legend()
+
+    # Window size (This will break if there is no window size)
+    if flowType == 'FastTCPFlow' or flowType == 'TCPRenoFlow':
+      plt.figure()
+      stats.plotsmooth(f1stats.windowsize, flowinterval, label="F1")
+      stats.plotsmooth(f2stats.windowsize, flowinterval, label="F2")
+      stats.plotsmooth(f3stats.windowsize, flowinterval, label="F3")
+      plt.title("Window Times in flows F1, F2, F3")
+      plt.ylabel("Time (ms)")
+      plt.legend()
+
+    # Graph Link information
+    linkinterval = 50
+    plt.figure()
+    l1stats = tc2a.links['L1'].stats
+    l2stats = tc2a.links['L2'].stats
+    l3stats = tc2a.links['L3'].stats
+
+    # link byte flow rate
+    stats.plotrate(l1stats.bytesflowed, linkinterval, label="L1")
+    stats.plotrate(l2stats.bytesflowed, linkinterval, label="L2")
+    stats.plotrate(l3stats.bytesflowed, linkinterval, label="L3")
     plt.title("Byte flow rate in L1, L2, L3")
     plt.ylabel("Flow Rate (Bytes/ms)")
     stats.zeroxaxis()
 
     plt.figure()
-    link1buffer = tc2a.links['L1'].stats.bufferoccupancy
-    link2buffer = tc2a.links['L2'].stats.bufferoccupancy
-    link3buffer = tc2a.links['L3'].stats.bufferoccupancy
 
-    stats.plotrate(link1buffer, 50, label="L1")
-    stats.plotrate(link2buffer, 50, label="L2")
-    stats.plotrate(link3buffer, 50, label="L3")
+    # link buffer occupancy
+    stats.plotsmooth(l1stats.bufferoccupancy, linkinterval, label="L1")
+    stats.plotsmooth(l2stats.bufferoccupancy, linkinterval, label="L2")
+    stats.plotsmooth(l3stats.bufferoccupancy, linkinterval, label="L3")
     plt.title("Buffer size in L1, L2, L3")
     plt.ylabel("Buffer Occupancy (Bytes)")
     stats.zeroxaxis()
+
+    # bytes lost
+    plt.figure()
+    stats.plotintervalsum(l1stats.lostpackets, linkinterval, label="L1")
+    stats.plotintervalsum(l2stats.lostpackets, linkinterval, label="L2")
+    stats.plotintervalsum(l3stats.lostpackets, linkinterval, label="L3")
+    plt.title("Packets lost in L1, L2, L3")
+    plt.ylabel("Packets")
+    stats.zeroxaxis()
+
+    # Plot source send and recieve rates
+    s1stats = tc2a.nodes['S1'].stats
+    s2stats = tc2a.nodes['S2'].stats
+    s3stats = tc2a.nodes['S3'].stats
+
+        # Byte Send Rate of all 3
+    sourceinterval = 40
+    plt.figure()
+    stats.plotrate(s1stats.bytessent, sourceinterval, label="S1")
+    stats.plotrate(s2stats.bytessent, sourceinterval, label="S2")
+    stats.plotrate(s3stats.bytessent, sourceinterval, label="S3")
+    plt.title("Send rates in source nodes S1, S2, S3")
+    plt.ylabel("Bytes/ms")
+    plt.legend()
+
+    # Byte Recieved Rate of all 3
+    plt.figure()
+    stats.plotrate(s1stats.bytesrecieved, sourceinterval, label="S1")
+    stats.plotrate(s2stats.bytesrecieved, sourceinterval, label="S2")
+    stats.plotrate(s3stats.bytesrecieved, sourceinterval, label="S3")
+    plt.title("Recieve rates in source nodes S1, S2, S3")
+    plt.ylabel("Bytes/ms")
+    plt.legend()
+
+    # Plot sink send and recieve rates
+    t1stats = tc2a.nodes['T1'].stats
+    t2stats = tc2a.nodes['T2'].stats
+    t3stats = tc2a.nodes['T3'].stats
+
+        # Byte Send Rate of all 3
+    sourceinterval = 40
+    plt.figure()
+    stats.plotrate(t1stats.bytessent, sourceinterval, label="T1")
+    stats.plotrate(t2stats.bytessent, sourceinterval, label="T2")
+    stats.plotrate(t3stats.bytessent, sourceinterval, label="T3")
+    plt.title("Send rates in source nodes T1, T2, T3")
+    plt.ylabel("Bytes/ms")
+    plt.legend()
+
+    # Byte Recieved Rate of all 3
+    plt.figure()
+    stats.plotrate(t1stats.bytesrecieved, sourceinterval, label="T1")
+    stats.plotrate(t2stats.bytesrecieved, sourceinterval, label="T2")
+    stats.plotrate(t3stats.bytesrecieved, sourceinterval, label="T3")
+    plt.title("Recieve rates in source nodes T1, T2, T3")
+    plt.ylabel("Bytes/ms")
+    plt.legend()
+
 
     plt.show()

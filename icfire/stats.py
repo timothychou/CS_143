@@ -60,12 +60,12 @@ class HostStats(Stats):
         else:
             self.bytesrecieved[timestamp] = bytes
 
-    def analyze(self):
+    def analyze(self, interval=40):
         """ This script does a full analysis over the stats stored in a host
         """
         plt.figure()
-        plotrate(self.bytessent, 40, label="sent")
-        plotrate(self.bytesrecieved, 40, label="recieved")
+        plotrate(self.bytessent, interval, label="sent")
+        plotrate(self.bytesrecieved, interval, label="recieved")
         plt.title("Bytes send and recieve rates from host " +
                   str(self.parent_id))
         plt.ylabel("Bytes/ms")
@@ -126,7 +126,7 @@ class FlowStats(Stats):
         """
         self.windowsize[timestamp] = cwnd
 
-    def analyze(self):
+    def analyze(self, interval=40):
         """ This script does a full analysis over the stats stored in a flow
             and plots graphs relevant the data.
 
@@ -142,15 +142,15 @@ class FlowStats(Stats):
         plt.legend()
 
         plt.figure()
-        plotrate(self.bytessent, 40, label="sent")
-        plotrate(self.bytesrecieved, 40, label="breceived")
+        plotrate(self.bytessent, interval, label="sent")
+        plotrate(self.bytesrecieved, interval, label="breceived")
         plt.title("Send and recieve data rates in flow " +
                   str(self.parent_id))
         plt.ylabel("Bytes/ms")
         plt.legend()
 
         plt.figure()
-        plotsmooth(self.rttdelay, 30)
+        plotsmooth(self.rttdelay, interval)
         plt.ylabel("Round-trip delay (ms)")
         plt.title("Round-Trip delay in flow " +
                   str(self.parent_id))
@@ -158,7 +158,7 @@ class FlowStats(Stats):
         # don't plot for flows without a windowsize
         if self.windowsize:
             plt.figure()
-            plotsmooth(self.windowsize, 40)
+            plotsmooth(self.windowsize, interval)
             plt.title("Window size of flow " + str(self.parent_id))
             plt.ylabel("Window size")
 
@@ -206,9 +206,9 @@ class LinkStats(Stats):
     def updateBufferOccupancy(self, timestamp, buffersize):
             self.bufferoccupancy[timestamp] = buffersize
 
-    def analyze(self):
+    def analyze(self, interval=40):
         plt.figure()
-        plotrate(self.bytesflowed, 50)
+        plotrate(self.bytesflowed, interval)
         plt.title("Byte flow rate through link " +
                   str(self.parent_id))
         plt.ylabel("Flow Rate (Byte/ms)")
@@ -220,13 +220,13 @@ class LinkStats(Stats):
                   str(self.parent_id))
         plt.ylabel("Bytes")
         plt.figure()
-        plotintervalsum(self.lostpackets, 20)
+        plotintervalsum(self.lostpackets, interval)
         plt.title("Packets lost in link " +
                   str(self.parent_id))
         plt.ylabel("Packets")
 
         plt.figure()
-        plotrate(self.bufferoccupancy, 50)
+        plotrate(self.bufferoccupancy, interval)
         plt.title("Buffer occupancy in link " +
                   str(self.parent_id))
         plt.ylabel("Occupancy (kb)")
