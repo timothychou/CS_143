@@ -111,7 +111,7 @@ class FlowStats(Stats):
         :param timestamp: time this occurred
         :param bytes: number of bytes
         """
-        if timestamp in self.bytessent:
+        if timestamp in self.bytesrecieved:
             self.bytesrecieved[timestamp] += bytes
         else:
             self.bytesrecieved[timestamp] = bytes
