@@ -483,14 +483,14 @@ class FlowRecipient(object):
         :param timestamp: time that this occurs
         :return: new AckPacket
         """
-        self.stats.addBytesRecieved(timestamp, packet.size)
+        self.stats.addBytesReceived(timestamp, packet.size)
         if packet.index >= self.lastAck:
             self.received |= {packet.index}
         while self.lastAck in self.received:
             self.received.remove(self.lastAck)
             self.lastAck += 1
 
-        self.stats.addBytesRecieved(timestamp, packet.size)
+        self.stats.addBytesReceived(timestamp, packet.size)
         return AckPacket(packet.dest, packet.source,
                          self.lastAck, packet.flowId, packet.timestamp)
 
