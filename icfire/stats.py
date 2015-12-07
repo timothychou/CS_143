@@ -133,7 +133,7 @@ class FlowStats(Stats):
     2. packet round-trip delay
     """
 
-    def __init__(self, flow_id, realTimePlot=True, figure=None, interval=40):
+    def __init__(self, flow_id, realTimePlot=False, figure=None, interval=40):
         super(FlowStats, self).__init__(flow_id)
         self.bytessent = dict()
         self.bytesreceived = dict()
@@ -660,6 +660,7 @@ def plotrate(datadict, resolution, xlabel=True, **kwargs):
     times, rates = calcRate(datadict, resolution)
 
     plt.plot(times, rates, **kwargs)
+    plt.autoscale(True)
     if xlabel:
         plt.xlabel("Time (ms)")
     zeroxaxis()
@@ -677,7 +678,8 @@ def plotsmooth(datadict, resolution, xlabel=True, **kwargs):
     """
     times, rates = calcSmooth(datadict, resolution)
 
-    plt.plot(times, rates, **kwargs)
+    plt.step(times, rates, **kwargs)
+    plt.autoscale(True)
     if xlabel:
         plt.xlabel("Time (ms)")
     zeroxaxis()
@@ -696,6 +698,7 @@ def plotintervalsum(datadict, resolution, xlabel=True, **kwargs):
     times, rates = calcIntervalsum(datadict, resolution)
 
     plt.plot(times, rates, **kwargs)
+    plt.autoscale(True)
     if xlabel:
         plt.xlabel("Time (ms)")
     zeroxaxis()
@@ -711,6 +714,7 @@ def plotcumsum(datadict, xlabel=True, **kwargs):
     sortedtimes, cumsum = calcCumsum(datadict)
 
     plt.plot(sortedtimes, cumsum, **kwargs)
+    plt.autoscale(True)
     if xlabel:
         plt.xlabel("Time (ms)")
     zeroxaxis()
