@@ -37,6 +37,7 @@ class Router(Node):
         self.routing_table = dict()
         # dict with link object as key, list of dest addresses as values
         self.lookup_table = dict()
+        self.neighborTables = []
         # The routing table should either have a default starting state, or
         # _UpdateRoutingTable should be called once. Otherwise, the Router
         # will not be able to forward anything at all.
@@ -63,25 +64,29 @@ class Router(Node):
         # Received routing table information, update table
         elif isinstance(event.packet, RoutingPacket):
             neighborTable = event.packet.routingTable
+
             link = event.sender
             cost = link.cost()
+            self.neighborTables.append([neighborTable, link, cost])
             # overwrite parts of routing table that use neighbor
             # where neighbor changed
-            for dest in self.lookup_table.get(link, []):
-                self.routing_table[dest] = [link,
-                                            neighborTable[dest][1] + cost]
+            for i in range(2):
+                for neighborTable, link, cost in self.neighborTables:
+                    for dest in self.lookup_table.get(link, []):
+                        self.routing_table[dest] = [link,
+                                                    neighborTable[dest][1] + cost]
+            
+                    # update new mins
+                    for dest, val in neighborTable.iteritems():
+                        if self.routing_table.get(dest, [0, sys.maxint])[1] \
+                                > (val[1] + cost):
+                            if dest in self.routing_table:
+                                self.lookup_table[
+                                    self.routing_table[dest][0]].remove(dest)
 
-            # update new mins
-            for dest, val in neighborTable.iteritems():
-                if self.routing_table.get(dest, [0, sys.maxint])[1] \
-                        > (val[1] + cost):
-                    if dest in self.routing_table:
-                        self.lookup_table[
-                            self.routing_table[dest][0]].remove(dest)
-
-                    self.routing_table[dest] = [link, val[1] + cost]
-                    self.lookup_table[link] = self.lookup_table.get(
-                        link, []) + [dest]
+                            self.routing_table[dest] = [link, val[1] + cost]
+                            self.lookup_table[link] = self.lookup_table.get(
+                                link, []) + [dest]
 
         # Received routing table request
         elif isinstance(event.packet, RoutingRequestPacket):
@@ -113,6 +118,7 @@ class Router(Node):
         This method should be the result of an Event that informs
         the Router to update. Begins bellman ford on all nodes in the graph
         """
+        self.neighborTables = []
         packetevents = \
             [PacketEvent(event.timestamp + i * 10, self, self.links[i],
                          RoutingRequestPacket(self.address),
