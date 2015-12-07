@@ -366,9 +366,10 @@ class FastTCPFlow(TCPRenoFlow):
         super(FastTCPFlow, self).__init__(source_id, dest_id, bytes, flowId)
 
         # RTT calculator
-        self.srtt = 250
-        self.brtt = self.srtt
-        self.rtt = 250
+        self.srtt = 200
+        self.brtt = 3000
+        self.rtt = 200
+        self.first = True
         self.newRTT = False
 
         # parameters for window control algorithm
@@ -455,13 +456,19 @@ class FastTCPFlow(TCPRenoFlow):
         self.cwnd = int(self.cwndDouble)
         if not self.done:
             self.stats.updateCurrentWindowSize(event.timestamp, self.cwndDouble)
-            return [UpdateWindowEvent(event.timestamp + self.srtt, self,
+            return [UpdateWindowEvent(event.timestamp + 2 * self.srtt, self,
                                       logMessage='Updating window size on flow %s' % (self.flowId))]
         return []
 
     def _updateRTT(self, rtt):
-        a = min(3.0 / self.cwnd, .25)
-        self.srtt = self.srtt * (1 - a) + (a) * rtt
+        if self.first:
+            self.srtt = rtt
+            self.first = False
+        else:
+            a = min(3.0 / self.cwnd, .25)
+            self.srtt = self.srtt * (1 - a) + (a) * rtt
+
+
         self.brtt = min(self.brtt, self.srtt)
 
 
