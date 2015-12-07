@@ -95,6 +95,7 @@ if __name__ == '__main__':
 
     # Byte Send Rate of all 3
     plt.figure()
+    plt.subplot(411)
     stats.plotrate(f1stats.bytessent, flowinterval, label="F1")
     stats.plotrate(f2stats.bytessent, flowinterval, label="F2")
     stats.plotrate(f3stats.bytessent, flowinterval, label="F3")
@@ -105,7 +106,7 @@ if __name__ == '__main__':
     plt.legend()
 
     # Byte Recieved Rate of all 3
-    plt.figure()
+    plt.subplot(412)
     stats.plotrate(f1stats.bytesrecieved, flowinterval, label="F1")
     stats.plotrate(f2stats.bytesrecieved, flowinterval, label="F2")
     stats.plotrate(f3stats.bytesrecieved, flowinterval, label="F3")
@@ -116,7 +117,7 @@ if __name__ == '__main__':
     plt.legend()
 
     # RTT of flows
-    plt.figure()
+    plt.subplot(413)
     stats.plotsmooth(f1stats.rttdelay, flowinterval, label="F1")
     stats.plotsmooth(f2stats.rttdelay, flowinterval, label="F2")
     stats.plotsmooth(f3stats.rttdelay, flowinterval, label="F3")
@@ -128,7 +129,7 @@ if __name__ == '__main__':
 
     # Window size (This will break if there is no window size)
     if flowType == 'FastTCPFlow' or flowType == 'TCPRenoFlow':
-        plt.figure()
+        plt.subplot(414)
         stats.plotsmooth(f1stats.windowsize, flowinterval, label="F1")
         stats.plotsmooth(f2stats.windowsize, flowinterval, label="F2")
         stats.plotsmooth(f3stats.windowsize, flowinterval, label="F3")
@@ -146,6 +147,7 @@ if __name__ == '__main__':
     l3stats = tc2a.links['L3'].stats
 
     # link byte flow rate
+    plt.subplot(311)
     stats.plotrate(l1stats.bytesflowed, linkinterval, label="L1")
     stats.plotrate(l2stats.bytesflowed, linkinterval, label="L2")
     stats.plotrate(l3stats.bytesflowed, linkinterval, label="L3")
@@ -156,7 +158,7 @@ if __name__ == '__main__':
     plt.legend()
 
     # link buffer occupancy
-    plt.figure()
+    plt.subplot(312)
     stats.plotsmooth(l1stats.bufferoccupancy, linkinterval, label="L1")
     stats.plotsmooth(l2stats.bufferoccupancy, linkinterval, label="L2")
     stats.plotsmooth(l3stats.bufferoccupancy, linkinterval, label="L3")
@@ -167,7 +169,7 @@ if __name__ == '__main__':
     plt.legend()
 
     # bytes lost
-    plt.figure()
+    plt.subplot(313)
     stats.plotintervalsum(l1stats.lostpackets, linkinterval, label="L1")
     stats.plotintervalsum(l2stats.lostpackets, linkinterval, label="L2")
     stats.plotintervalsum(l3stats.lostpackets, linkinterval, label="L3")
@@ -177,14 +179,16 @@ if __name__ == '__main__':
     stats.zeroyaxis()
     plt.legend()
 
+
+    # SOURCE
     # Plot source send and recieve rates
+    plt.figure()
     s1stats = tc2a.nodes['S1'].stats
     s2stats = tc2a.nodes['S2'].stats
     s3stats = tc2a.nodes['S3'].stats
 
     # Byte send/receive rate of all 3 sources
     sourceinterval = 40
-    plt.figure()
     stats.plotrate(s1stats.bytessent, sourceinterval, label="S1-send")
     stats.plotrate(s2stats.bytessent, sourceinterval, label="S2-send")
     stats.plotrate(s3stats.bytessent, sourceinterval, label="S3-send")
