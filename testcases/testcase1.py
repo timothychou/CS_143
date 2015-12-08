@@ -9,7 +9,8 @@ from icfire.network import Network
 from icfire.eventhandler import EventHandler
 import icfire.stats as stats
 
-
+#flowType = 'TCPRenoFlow'
+flowType = 'FastTCPFlow'
 def buildNetwork(static_routing=False):
     """ This function builds the network for the test case
 
@@ -28,8 +29,8 @@ def buildNetwork(static_routing=False):
     tc1.addLink(r2, r4, rate=10, delay=10, buffsize=64, linkid='L3')
     tc1.addLink(r3, r4, rate=10, delay=10, buffsize=64, linkid='L4')
     tc1.addLink(r4, h2, rate=12.5, delay=10, buffsize=64, linkid='L5')
-    # flowType = 'TCPRenoFlow'
-    flowType = 'FastTCPFlow'
+
+
     tc1.addFlow(h1, h2, bytes=20000000, timestamp=500,
                 flowType=flowType, flowId='F1')
 
@@ -61,7 +62,7 @@ if __name__ == '__main__':
 
     EventHandler(tc1a).run(1000000)
     f1stats = tc1a.flows['F1'].stats
-    f1stats.analyze()
+    f1stats.analyze(step=flowType=='TCPRenoFlow')
     tc1a.nodes['H1'].stats.analyze()
     # tc1a.links['L1'].stats.analyze()
     # plt.show()

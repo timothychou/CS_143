@@ -302,7 +302,7 @@ class FlowStats(Stats):
                         self.curTime[-1] = timer.time()
                         self.fig.canvas.draw()
 
-    def analyze(self, interval=40, sameFigure=True):
+    def analyze(self, interval=40, sameFigure=True, step=False):
         """ This script does a full analysis over the stats stored in a flow
             and plots graphs relevant the data.
 
@@ -342,7 +342,7 @@ class FlowStats(Stats):
                 isBottom = False
         else:
             plt.figure()
-        plotsmooth(self.rttdelay, interval, isBottom)
+        plotsmooth(self.rttdelay, interval, isBottom, step)
         plt.ylabel("Round-trip delay (ms)")
         plt.title("Round-Trip delay in flow " +
                   str(self.parent_id))
@@ -354,7 +354,7 @@ class FlowStats(Stats):
                 plt.xlabel('Time (ms)')
             else:
                 plt.figure()
-            plotsmooth(self.windowsize, interval)
+            plotsmooth(self.windowsize, interval, step=step)
             plt.title("Window size of flow " + str(self.parent_id))
             plt.ylabel("Window size")
         plt.subplots_adjust(hspace=0.5)
@@ -502,7 +502,7 @@ class LinkStats(Stats):
                         self.curTime[-1] = timer.time()
                         self.fig.canvas.draw()
 
-    def analyze(self, interval=40, sameFigure=True):
+    def analyze(self, interval=40, sameFigure=True, step=False):
         plt.figure()
         if sameFigure:
             plt.subplot(4,1,1)
@@ -540,6 +540,8 @@ class LinkStats(Stats):
         plt.title("Buffer occupancy in link " +
                   str(self.parent_id))
         plt.ylabel("Occupancy (kb)")
+
+        plt.subplots_adjust(hspace=.5)
 
 """ Helper Functions """
 
@@ -666,7 +668,7 @@ def plotrate(datadict, resolution, xlabel=True, **kwargs):
     zeroxaxis()
 
 
-def plotsmooth(datadict, resolution, xlabel=True, **kwargs):
+def plotsmooth(datadict, resolution, xlabel=True, step=False, **kwargs):
     """ Plots the value of a data point averaged over the interval
 
     This works by creating discrete time interval and averaging all values
@@ -677,8 +679,10 @@ def plotsmooth(datadict, resolution, xlabel=True, **kwargs):
     :param kwargs: dictionary, or keyword arguments to be passed to pyplot
     """
     times, rates = calcSmooth(datadict, resolution)
-
-    plt.step(times, rates, **kwargs)
+    if step:
+        plt.step(times, rates, **kwargs)
+    else:
+        plt.plot(times, rates, **kwargs)
     plt.autoscale(True)
     if xlabel:
         plt.xlabel("Time (ms)")
