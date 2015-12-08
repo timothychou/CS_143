@@ -20,10 +20,11 @@ if __name__ == '__main__':
     # load network
     tc2 = Network()
     tc2.load(filename)
-    tc2.draw()
 
     # run
     EventHandler(tc2).run(2000000)
+    tc2.draw()
 
     # plot
-    tc2.plotAll(flowinterval, plotflows, linkinterval, plotlinks, hostinterval, plothosts)
+    tc2.plotAll(flowinterval, plotflows, linkinterval, plotlinks,
+                hostinterval, plothosts, "Reno for TC2")

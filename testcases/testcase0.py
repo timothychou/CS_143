@@ -20,10 +20,11 @@ if __name__ == '__main__':
     # load network
     tc0 = Network()
     tc0.load(filename)
-    tc0.draw()
 
     # run
     EventHandler(tc0).run(2000000)
+    tc0.draw()
 
     # plot
-    tc0.plotAll(flowinterval, plotflows, linkinterval, plotlinks, hostinterval, plothosts)
+    tc0.plotAll(flowinterval, plotflows, linkinterval, plotlinks,
+                hostinterval, plothosts, "Fast for TC0")

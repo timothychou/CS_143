@@ -196,7 +196,8 @@ class Network(object):
 
         # load routers
         for router in data["routers"]:
-            self.addRouter(router["id"], router["init_time"], router["static_routing"])
+            self.addRouter(
+                router["id"], router["init_time"], router["static_routing"])
 
         # load links
         for link in data["links"]:
@@ -229,7 +230,8 @@ class Network(object):
         nx.draw_networkx_edge_labels(self.G, pos, edge_labels=edgelabels)
         plt.show()
 
-    def plotAll(self, flowres, plotflows, linkres, plotlinks, hostres, plothosts):
+    def plotAll(self, flowres, plotflows, linkres, plotlinks,
+                hostres, plothosts, flowType="Reno"):
         """ plot data for specified flows, links, hosts
 
         :param flowres: resolution for flow plots
@@ -238,36 +240,36 @@ class Network(object):
         :param plotlinks: links to plot
         :param hostres: resolution for host plots
         :param plothosts: hosts to plot
+        :param flotType: string to describe the type of flow used.
+            Defaults to Reno
         """
         # FLOWS
         # Byte Send Rate of all 3
         plt.figure()
         plt.subplot(411)
+        plt.title("Flow statistics using TCP " + flowType)
         for f in plotflows:
             plotrate(self.flows[f].stats.bytessent, flowres, False, label=f)
-        plt.title('Flow send rate')
-        plt.ylabel('Bytes/ms')
+        plt.ylabel('Send rate (Bytes/ms)')
 
         # Byte Recieved Rate of all 3
         plt.subplot(412)
         for f in plotflows:
             plotrate(self.flows[f].stats.bytesreceived, flowres, False, label=f)
-        plt.title('Flow receive rate')
-        plt.ylabel('Bytes/ms')
+        plt.ylabel('Recieve rate (Bytes/ms)')
 
         # RTT of flows
         plt.subplot(413)
         for f in plotflows:
             plotsmooth(self.flows[f].stats.rttdelay, flowres, False, label=f)
-        plt.title('Flow RTT')
-        plt.ylabel('Time (ms)')
+        plt.ylabel('Flow RTT (ms)')
 
         # Window size (This will break if there is no window size)
         plt.subplot(414)
         for f in plotflows:
-            plotsmooth(self.flows[f].stats.windowsize, flowres, label=f)
-        plt.title('Flow window sizes')
-        plt.ylabel('Size')
+            if self.flows[f].stats.windowsize:
+                plotsmooth(self.flows[f].stats.windowsize, flowres, label=f)
+        plt.ylabel('Window size')
 
         plt.subplots_adjust(hspace=.5)
 
@@ -275,24 +277,23 @@ class Network(object):
         # link byte flow rate
         plt.figure()
         plt.subplot(311)
+        plt.title("Link statistics using TCP " + flowType)
         for l in plotlinks:
             plotrate(self.links[l].stats.bytesflowed, linkres, False, label=l)
-        plt.title('Link flow rate')
         plt.ylabel('Flow Rate (Bytes/ms)')
 
         # link buffer occupancy
         plt.subplot(312)
         for l in plotlinks:
-            plotsmooth(self.links[l].stats.bufferoccupancy, linkres, False, label=l)
-        plt.title('Link buffer size')
+            plotsmooth(
+                self.links[l].stats.bufferoccupancy, linkres, False, label=l)
         plt.ylabel('Buffer Occupancy (Bytes)')
 
         # bytes lost
         plt.subplot(313)
         for l in plotlinks:
             plotintervalsum(self.links[l].stats.lostpackets, linkres, label=l)
-        plt.title('Link packets lost')
-        plt.ylabel('Packets')
+        plt.ylabel('Packets lost')
 
         plt.subplots_adjust(hspace=.5)
 
@@ -301,9 +302,14 @@ class Network(object):
         plt.figure()
         for i in xrange(len(plothosts)):
             h = plothosts[i]
-            plt.subplot(len(plothosts) * 100 + 10 + i + 1)
-            plotrate(self.nodes[h].stats.bytessent, hostres, label='%s-send' % h)
-            plotrate(self.nodes[h].stats.bytesreceived, hostres, label='%s-receive' % h)
+            plt.subplot(len(plothosts) * 100 + 10 + i + 1)  # dank code man
+            plt.title("Host " + h + " using TCP " + flowType)
+            plotrate(
+                self.nodes[h].stats.bytessent, hostres, label='%s-send' % h)
+            plotrate(
+                self.nodes[h].stats.bytesreceived, hostres, label='%s-receive' % h)
             plt.ylabel('Bytes/ms')
+
+        plt.subplots_adjust(hspace=.5)
 
         plt.show()
