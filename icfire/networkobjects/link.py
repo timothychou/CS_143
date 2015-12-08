@@ -41,8 +41,11 @@ class Link(NetworkObject):
         self.maxbuffersize = maxbuffersize * 1024
         self.id = linkid
 
-        self.buffer = Queue()  # Queue using a cyclic array
-        self.buffersize = 0    # size of items in the buffer, bytes
+        self.buffer = Queue()       # Queue using a cyclic array
+        self.totalbuffersize = 0    # total size of items in the buffer, bytes
+        self.buffersizes = dict()   # size of items in buffer for A, B in bytes
+        self.buffersizes[self.nodeA] = 0
+        self.buffersizes[self.nodeB] = 0
 
         self.freeAt = -9999999
         self.stats = LinkStats(self.id)
@@ -65,31 +68,33 @@ class Link(NetworkObject):
                               'Link ' + self.id + ' processes a packet')]
 
         for p in packets:
-            if self.buffersize + p.size > self.maxbuffersize:
+            if self.buffersizes[sender] + p.size > self.maxbuffersize:
                 # Drop em' like its hot
                 logger.log('Dropping packet %s from host %s at link %s' %
                            (p.index, p.source, self.id))
                 self.stats.addLostPackets(timer.time, 1)
             else:
                 self.buffer.put((p, sender))
-                self.buffersize += p.size
+                self.totalbuffersize += p.size
+                self.buffersizes[sender] += p.size
 
-        self.stats.updateBufferOccupancy(timer.time, self.buffersize)
+        self.stats.updateBufferOccupancy(timer.time, self.totalbuffersize)
 
         return newevents
 
     def _processPacketEvent(self, packet_event):
         """Processes packet events, storing them in the buffer."""
-        if self.buffersize + packet_event.packet.size > self.maxbuffersize:
+        packet, sender = packet_event.packet, packet_event.sender
+        if self.buffersizes[sender] + packet.size > self.maxbuffersize:
             self.stats.addLostPackets(packet_event.timestamp, 1)
             logger.log('Dropping packet %s from host %s at link %s' %
-                       (packet_event.packet.index,
-                        str(packet_event.sender), self.id))
+                       (packet.index, str(sender), self.id))
             return []
 
-        self.buffer.put((packet_event.packet, packet_event.sender))
-        self.buffersize += packet_event.packet.size
-        self.stats.updateBufferOccupancy(timer.time, self.buffersize)
+        self.buffer.put((packet, sender))
+        self.totalbuffersize += packet.size
+        self.buffersizes[sender] += packet.size
+        self.stats.updateBufferOccupancy(timer.time, self.totalbuffersize)
 
         # If this is the first packet in the buffer, start the LinkTickEvents
         if self.buffer.qsize() == 1:
@@ -106,8 +111,9 @@ class Link(NetworkObject):
         in the buffer.
         """
         packet, sender = self.buffer.get()
-        self.buffersize -= packet.size
-        self.stats.updateBufferOccupancy(timer.time, self.buffersize)
+        self.totalbuffersize -= packet.size
+        self.buffersizes[sender] -= packet.size
+        self.stats.updateBufferOccupancy(timer.time, self.totalbuffersize)
 
         # Generate a new PacketEvent
         # Use event.timestamp because this is when the packet is actually
@@ -144,4 +150,4 @@ class Link(NetworkObject):
 
     def cost(self):
         """ cost of going through this edge """
-        return self.delay + 125.0 / 16384 * self.buffersize / self.rate
+        return self.delay + 125.0 / 16384 * self.totalbuffersize / self.rate
