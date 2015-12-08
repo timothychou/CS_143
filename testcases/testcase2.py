@@ -88,7 +88,7 @@ if __name__ == '__main__':
     EventHandler(tc2a).run(2000000)
 
     # graph flows
-    flowinterval = 40
+    flowinterval = 100
     f1stats = tc2a.flows['F1'].stats
     f2stats = tc2a.flows['F2'].stats
     f3stats = tc2a.flows['F3'].stats
@@ -107,9 +107,9 @@ if __name__ == '__main__':
 
     # Byte Recieved Rate of all 3
     plt.subplot(412)
-    stats.plotrate(f1stats.bytesrecieved, flowinterval, label="F1")
-    stats.plotrate(f2stats.bytesrecieved, flowinterval, label="F2")
-    stats.plotrate(f3stats.bytesrecieved, flowinterval, label="F3")
+    stats.plotrate(f1stats.bytesreceived, flowinterval, label="F1")
+    stats.plotrate(f2stats.bytesreceived, flowinterval, label="F2")
+    stats.plotrate(f3stats.bytesreceived, flowinterval, label="F3")
     plt.title("Recieve rates in flows F1, F2, F3")
     plt.ylabel("Bytes/ms")
     stats.zeroxaxis()
@@ -140,7 +140,7 @@ if __name__ == '__main__':
         plt.legend()
 
     # Graph Link information
-    linkinterval = 50
+    linkinterval = 100
     plt.figure()
     l1stats = tc2a.links['L1'].stats
     l2stats = tc2a.links['L2'].stats
@@ -188,13 +188,13 @@ if __name__ == '__main__':
     s3stats = tc2a.nodes['S3'].stats
 
     # Byte send/receive rate of all 3 sources
-    sourceinterval = 40
+    sourceinterval = 100
     stats.plotrate(s1stats.bytessent, sourceinterval, label="S1-send")
     stats.plotrate(s2stats.bytessent, sourceinterval, label="S2-send")
     stats.plotrate(s3stats.bytessent, sourceinterval, label="S3-send")
-    stats.plotrate(s1stats.bytesrecieved, sourceinterval, label="S1-receive")
-    stats.plotrate(s2stats.bytesrecieved, sourceinterval, label="S2-receive")
-    stats.plotrate(s3stats.bytesrecieved, sourceinterval, label="S3-receive")
+    stats.plotrate(s1stats.bytesreceived, sourceinterval, label="S1-receive")
+    stats.plotrate(s2stats.bytesreceived, sourceinterval, label="S2-receive")
+    stats.plotrate(s3stats.bytesreceived, sourceinterval, label="S3-receive")
     plt.title("Send/receive rates in source nodes S1, S2, S3")
     plt.ylabel("Bytes/ms")
     stats.zeroxaxis()
@@ -207,14 +207,13 @@ if __name__ == '__main__':
     t3stats = tc2a.nodes['T3'].stats
 
     # Byte send/receive rate of all 3 recipients
-    sourceinterval = 40
     plt.figure()
     stats.plotrate(t1stats.bytessent, sourceinterval, label="T1-send")
     stats.plotrate(t2stats.bytessent, sourceinterval, label="T2-send")
     stats.plotrate(t3stats.bytessent, sourceinterval, label="T3-send")
-    stats.plotrate(t1stats.bytesrecieved, sourceinterval, label="T1-receive")
-    stats.plotrate(t2stats.bytesrecieved, sourceinterval, label="T2-receive")
-    stats.plotrate(t3stats.bytesrecieved, sourceinterval, label="T3-receive")
+    stats.plotrate(t1stats.bytesreceived, sourceinterval, label="T1-receive")
+    stats.plotrate(t2stats.bytesreceived, sourceinterval, label="T2-receive")
+    stats.plotrate(t3stats.bytesreceived, sourceinterval, label="T3-receive")
     plt.title("Send/receive rates in recipient nodes T1, T2, T3")
     plt.ylabel("Bytes/ms")
     stats.zeroxaxis()
