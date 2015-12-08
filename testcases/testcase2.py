@@ -96,9 +96,9 @@ if __name__ == '__main__':
     # Byte Send Rate of all 3
     plt.figure()
     plt.subplot(411)
-    stats.plotrate(f1stats.bytessent, flowinterval, label="F1")
-    stats.plotrate(f2stats.bytessent, flowinterval, label="F2")
-    stats.plotrate(f3stats.bytessent, flowinterval, label="F3")
+    stats.plotrate(f1stats.bytessent, flowinterval, False, label="F1")
+    stats.plotrate(f2stats.bytessent, flowinterval, False, label="F2")
+    stats.plotrate(f3stats.bytessent, flowinterval, False, label="F3")
     plt.title("Send rates in flows F1, F2, F3")
     plt.ylabel("Bytes/ms")
     stats.zeroxaxis()
@@ -107,9 +107,9 @@ if __name__ == '__main__':
 
     # Byte Recieved Rate of all 3
     plt.subplot(412)
-    stats.plotrate(f1stats.bytesreceived, flowinterval, label="F1")
-    stats.plotrate(f2stats.bytesreceived, flowinterval, label="F2")
-    stats.plotrate(f3stats.bytesreceived, flowinterval, label="F3")
+    stats.plotrate(f1stats.bytesreceived, flowinterval, False, label="F1")
+    stats.plotrate(f2stats.bytesreceived, flowinterval, False, label="F2")
+    stats.plotrate(f3stats.bytesreceived, flowinterval, False, label="F3")
     plt.title("Recieve rates in flows F1, F2, F3")
     plt.ylabel("Bytes/ms")
     stats.zeroxaxis()
@@ -118,9 +118,9 @@ if __name__ == '__main__':
 
     # RTT of flows
     plt.subplot(413)
-    stats.plotsmooth(f1stats.rttdelay, flowinterval, label="F1")
-    stats.plotsmooth(f2stats.rttdelay, flowinterval, label="F2")
-    stats.plotsmooth(f3stats.rttdelay, flowinterval, label="F3")
+    stats.plotsmooth(f1stats.rttdelay, flowinterval, False, label="F1")
+    stats.plotsmooth(f2stats.rttdelay, flowinterval, False, label="F2")
+    stats.plotsmooth(f3stats.rttdelay, flowinterval, False, label="F3")
     plt.title("Round Trip Time in flows F1, F2, F3")
     plt.ylabel("Time (ms)")
     stats.zeroxaxis()
@@ -138,6 +138,8 @@ if __name__ == '__main__':
         stats.zeroxaxis()
         stats.zeroyaxis()
         plt.legend()
+        
+    plt.subplots_adjust(hspace=.5)
 
     # Graph Link information
     linkinterval = 100
@@ -148,9 +150,9 @@ if __name__ == '__main__':
 
     # link byte flow rate
     plt.subplot(311)
-    stats.plotrate(l1stats.bytesflowed, linkinterval, label="L1")
-    stats.plotrate(l2stats.bytesflowed, linkinterval, label="L2")
-    stats.plotrate(l3stats.bytesflowed, linkinterval, label="L3")
+    stats.plotrate(l1stats.bytesflowed, linkinterval, False, label="L1")
+    stats.plotrate(l2stats.bytesflowed, linkinterval, False, label="L2")
+    stats.plotrate(l3stats.bytesflowed, linkinterval, False, label="L3")
     plt.title("Byte flow rate in L1, L2, L3")
     plt.ylabel("Flow Rate (Bytes/ms)")
     stats.zeroxaxis()
@@ -159,9 +161,9 @@ if __name__ == '__main__':
 
     # link buffer occupancy
     plt.subplot(312)
-    stats.plotsmooth(l1stats.bufferoccupancy, linkinterval, label="L1")
-    stats.plotsmooth(l2stats.bufferoccupancy, linkinterval, label="L2")
-    stats.plotsmooth(l3stats.bufferoccupancy, linkinterval, label="L3")
+    stats.plotsmooth(l1stats.bufferoccupancy, linkinterval, False, label="L1")
+    stats.plotsmooth(l2stats.bufferoccupancy, linkinterval, False, label="L2")
+    stats.plotsmooth(l3stats.bufferoccupancy, linkinterval, False, label="L3")
     plt.title("Buffer size in L1, L2, L3")
     plt.ylabel("Buffer Occupancy (Bytes)")
     stats.zeroxaxis()
@@ -179,6 +181,7 @@ if __name__ == '__main__':
     stats.zeroyaxis()
     plt.legend()
 
+    plt.subplots_adjust(hspace=.5)
 
     # SOURCE
     # Plot source send and recieve rates
@@ -206,6 +209,8 @@ if __name__ == '__main__':
     t2stats = tc2a.nodes['T2'].stats
     t3stats = tc2a.nodes['T3'].stats
 
+    plt.subplots_adjust(hspace=.5)
+
     # Byte send/receive rate of all 3 recipients
     plt.figure()
     stats.plotrate(t1stats.bytessent, sourceinterval, label="T1-send")
@@ -219,5 +224,7 @@ if __name__ == '__main__':
     stats.zeroxaxis()
     stats.zeroyaxis()
     plt.legend()
+
+    plt.subplots_adjust(hspace=.5)
 
     plt.show()

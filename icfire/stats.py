@@ -632,7 +632,7 @@ def calcIntervalsum(datadict, resolution):
                 datatotal = 0
                 time += resolution
 
-    return (time, resolution)
+    return (times, rates)
 
 def calcCumsum(datadict):
     """ Calculates the cumulative sum 
