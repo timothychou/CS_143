@@ -1,0 +1,32 @@
+{
+  "flows": [
+    {
+      "name": "F1",
+      "source_id": "H1",
+      "dest_id": "H2",
+      "timestamp": 1000,
+      "bytes": 20000000,
+      "flowType": "TCPRenoFlow"
+    }
+  ],
+  "hosts": [
+    {
+      "id": "H1"
+    },
+    {
+      "id": "H2"
+    }
+  ],
+  "routers": [
+  ],
+  "links": [
+    {
+      "id": "L1",
+      "source_id": "H1",
+      "target_id": "H2",
+      "rate": 10,
+      "delay": 10,
+      "buffsize": 64
+    }
+  ]
+}

@@ -1,1 +1,0 @@
-{"directed": false, "graph": {"flows": {"F1": {"source_id": "H1", "timestamp": 100, "dest_id": "H2", "bytes": 20000000, "flowType": "FastTCPFlow"}}}, "nodes": [{"host": 1, "id": "H2"}, {"host": 1, "id": "H1"}], "links": [{"target": 1, "buffsize": 64, "linkid": "L1", "delay": 10, "source": 0, "rate": 10}], "multigraph": false}

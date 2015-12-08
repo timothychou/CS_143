@@ -14,7 +14,6 @@ for much of importing and exporting
 import json
 
 import networkx as nx
-from networkx.readwrite import json_graph
 
 from icfire import logger
 import icfire.flow as flow
@@ -45,18 +44,10 @@ class Network(object):
         self.links = dict()
         self.flows = dict()
         self.events = []
-        self.last_node = 0
-        self.last_link = 0
-        self.last_flow = 0
-
-        # Data gathering
-        self.gathertick = 10    # Gather data every 10ms
-        self.times = []         # time data was gathered
-        self.data = {}          # key = name <str>, value = data <list>
 
     # graph creation functions
 
-    def addRouter(self, node_id=None, init_time=0, static_routing=False):
+    def addRouter(self, node_id, init_time, static_routing):
         """ Adds a router to the list of hosts and to the graph representation
 
         :param node_id: (optional) specify a node id to use for this node.
@@ -65,52 +56,40 @@ class Network(object):
          or dyanmic routing
         :returns: id of router added
         """
-        newid = None
-        if node_id is None:
-            newid = self.getNewNodeId()
-        elif self.G.has_node(newid):
+        if self.G.has_node(node_id):
             logger.log("router " + str(node_id) + " is already in the graph.")
             return
-        else:
-            newid = node_id
 
-        self.G.add_node(newid, host=0)
-        self.nodes[newid] = Router(newid, [])
+        self.G.add_node(node_id, host=0)
+        self.nodes[node_id] = Router(node_id, [])
 
         if not static_routing:
             # if dynamic routing, create a update routing table event
             self.events.append(
                 UpdateRoutingTableEvent(
                     init_time,
-                    self.nodes[newid],
-                    'Router %s updates routing table' % newid))
-            # TODO(tangerine) make initial UpdateRoutingTableEvents be
-            # saved/loaded
+                    self.nodes[node_id],
+                    'Router %s updates routing table' % node_id))
 
-        return newid
+        return node_id
 
-    def addHost(self, node_id=None):
+    def addHost(self, node_id):
         """ Adds a host to the list of hosts and to the graph representation
 
         :param node_id: (optional) specify a node id to use for this node.
         :returns: id of host added
         """
-        if node_id is None:
-            newid = self.getNewNodeId()
-        else:
-            newid = node_id
-
-        if newid in self.G:
+        if node_id in self.G:
             print "Graph already has node " + node_id + ". Not adding."
-            return newid
+            return node_id
         else:
-            self.G.add_node(newid, host=1)
-        self.nodes[newid] = Host(newid)
+            self.G.add_node(node_id, host=1)
+        self.nodes[node_id] = Host(node_id)
 
-        return newid
+        return node_id
 
     def addLink(self, source_id, target_id,
-                rate=10, delay=10, buffsize=64, linkid=None):
+                rate, delay, buffsize, linkid):
         """ Adds a link from source_id to target_id
 
         :param source_id: id of a node
@@ -124,11 +103,6 @@ class Network(object):
         """
         if source_id in self.nodes and target_id in self.nodes:
             # If no linkid is provided, generate a unique
-            if linkid is None:
-                linkid = self.getNewLinkId()
-            elif linkid in self.links:
-                logger.log("Link ID is not unique!")
-                return None
             if not self.G.has_edge(source_id, target_id):
                 self.G.add_edge(source_id, target_id,
                                 rate=rate, delay=delay,
@@ -136,7 +110,6 @@ class Network(object):
             self.links[linkid] = Link(self.nodes[source_id],
                                       self.nodes[target_id],
                                       rate, delay, buffsize, linkid)
-            self.data['%s-buf' % str(linkid)] = []
             self.nodes[source_id].addLink(self.links[linkid])
             self.nodes[target_id].addLink(self.links[linkid])
             return linkid
@@ -144,8 +117,7 @@ class Network(object):
             print("Source or target not in the graph!")
             return None
 
-    def addFlow(self, source_id, dest_id, bytes, timestamp, flowType,
-                flowId=None):
+    def addFlow(self, source_id, dest_id, bytes, timestamp, flowType, flowId):
         """ This function adds a flow to the network description
 
         This also creates the flow if the flow has not been created already
@@ -177,7 +149,7 @@ class Network(object):
         else:
             print("host_id not found")
 
-    def _createFlow(self, source_id, dest_id, bytes, timestamp, flowType, flowId=None):
+    def _createFlow(self, source_id, dest_id, bytes, timestamp, flowType, flowId):
         """ Adds a new Flow from source_id to dest_id
 
         Uses reflection on flowType to create the appropriate Flow object
@@ -194,92 +166,57 @@ class Network(object):
             return None
 
         assert flowType in flow.__dict__
-        if flowId is None:
-            newFlowId = self.getNewFlowId()
-        else:
-            newFlowId = flowId
 
-        f = flow.__dict__[flowType](source_id, dest_id, bytes, newFlowId)
-        self.flows[newFlowId] = f
-        self.data['%s-cwnd' % newFlowId] = []
-        self.data['%s-rate' % newFlowId] = []
-        self.data['%s-rtt' % newFlowId] = []
+        f = flow.__dict__[flowType](source_id, dest_id, bytes, flowId)
+        self.flows[flowId] = f
 
         self.nodes[source_id].addFlow(f)
-        fr = flow.FlowRecipient(newFlowId, f.stats)
+        fr = flow.FlowRecipient(flowId, f.stats)
         self.nodes[dest_id].addFlowRecipient(fr)
 
         # Create an Event to update the Flow (send first packet)
         self.events.append(
-            UpdateFlowEvent(timestamp, self.nodes[source_id], newFlowId,
-                            'Initialize flow ' + repr(newFlowId)))
+            UpdateFlowEvent(timestamp, self.nodes[source_id], flowId,
+                            'Initialize flow ' + repr(flowId)))
 
         if flowType == 'FastTCPFlow':
             self.events.append(UpdateWindowEvent(timestamp,
-                                                 self.flows[newFlowId],
-                                                 logMessage='Updating window size on flow %s' % (f.flowId)))
-        return newFlowId
+                                                 self.flows[flowId],
+                                                 logMessage='Updating window size on flow %s' % flowId))
+        return flowId
 
-    def loadFlows(self, filename=None):
-        """ This function loads flows from file and instantiates them.
-
-        If it is not given a filename, it tries to load from the graph.
-
-        :param filename: optional filename
-        """
-
-        if filename is None:
-            G = self.G
-        else:
-            with open(filename, 'r') as f:
-                data = json.load(f)
-                G = json_graph.node_link_graph(data)
-
-        assert len(G) > 0
-
-        if 'flows' in self.G.graph:
-            flows = self.G.graph['flows']
-            for i in flows:
-                # generate events
-                source_id = flows[i].get('source_id')
-                dest_id = flows[i].get('dest_id')
-                bytes = flows[i].get('bytes')
-                timestamp = flows[i].get('timestamp')
-                flowType = flows[i].get('flowType', 'Flow')
-                self._createFlow(source_id, dest_id, bytes,
-                                 timestamp, flowType)
-
-    def save(self, filename):
-        """ Writes the data to file
-
-        :param filename: file to write to
-        """
-        data = json_graph.node_link_data(self.G)
-        s = json.dumps(data)
-        with open(filename, 'w') as f:
-            f.write(s)
-
-    def load(self, filename='testfile.json'):
+    def load(self, filename):
         with open(filename, 'r') as f:
             data = json.load(f)
-        self.G = json_graph.node_link_graph(data)
-        self.last_node = max(self.G.nodes())
-        for node_id in self.G.nodes():
-            # generate hosts and routers
-            if self.G.node[node_id].get('host'):
-                self.nodes[node_id] = Host(node_id)
-            else:
-                self.nodes[node_id] = Router(node_id)
+            f.close()
 
-        for edge in self.G.edges(data=True):
-            linkid = edge[2].get('linkid', self.getNewLinkId())
-            self.addLink(edge[0], edge[1],
-                         edge[2].get('rate'),
-                         edge[2].get('delay'),
-                         edge[2].get('buffsize'),
-                         linkid)
+        # load hosts
+        for host in data["hosts"]:
+            self.addHost(host["id"])
 
-        self.loadFlows()
+        # load routers
+        for router in data["routers"]:
+            self.addRouter(router["id"], router["init_time"], router["static_routing"])
+
+        # load links
+        for link in data["links"]:
+            id = link["id"]
+            source_id = link["source_id"]
+            target_id = link["target_id"]
+            rate = link["rate"]
+            delay = link["delay"]
+            buffsize = link["buffsize"]
+            self.addLink(source_id, target_id, rate, delay, buffsize, id)
+
+        # load flows
+        for flow in data["flows"]:
+            name = flow["name"]
+            source_id = flow["source_id"]
+            dest_id = flow["dest_id"]
+            timestamp = flow["timestamp"]
+            bytes = flow["bytes"]
+            flowType = flow["flowType"]
+            self.addFlow(source_id, dest_id, bytes, timestamp, flowType, name)
 
     def draw(self):
         colors = [self.G.node[n]['host'] for n in self.G.nodes()]
@@ -292,42 +229,81 @@ class Network(object):
         nx.draw_networkx_edge_labels(self.G, pos, edge_labels=edgelabels)
         plt.show()
 
-    def getNewNodeId(self):
-        while self.last_node in self.nodes:
-            self.last_node += 1
-        return self.last_node
+    def plotAll(self, flowres, plotflows, linkres, plotlinks, hostres, plothosts):
+        """ plot data for specified flows, links, hosts
 
-    def getNewLinkId(self):
-        while self.last_link in self.links:
-            self.last_link += 1
-        return self.last_link
-
-    def getNewFlowId(self):
-        while self.last_flow in self.flows:
-            self.last_flow += 1
-        return self.last_flow
-
-    def getLinkList(self):
-        return list(self.links.keys())
-
-    def getNodeList(self):
-        return list(self.nodes.keys())
-
-    def getRouterList(self):
-        return [node for node in self.nodes.keys()
-                if not self.nodes[node]['host']]
-
-    def getHostList(self):
-        return [node for node in self.nodes.keys()
-                if self.nodes[node]['host']]
-
-    def processEvent(self, event):
-        """ Processes one event, depending on what the event is.
-
-        This method should be called directly or indirectly by an EventHandler.
-
-        :param event: Event to be processed.
-        :return: list of new Events to be enqueued.
+        :param flowres: resolution for flow plots
+        :param plotflows: flows to plot
+        :param linkres: resolution for link plots
+        :param plotlinks: links to plot
+        :param hostres: resolution for host plots
+        :param plothosts: hosts to plot
         """
-        raise NotImplementedError(
-            'Network should only receive GatherDataEvents')
+        # FLOWS
+        # Byte Send Rate of all 3
+        plt.figure()
+        plt.subplot(411)
+        for f in plotflows:
+            plotrate(self.flows[f].stats.bytessent, flowres, False, label=f)
+        plt.title('Flow send rate')
+        plt.ylabel('Bytes/ms')
+
+        # Byte Recieved Rate of all 3
+        plt.subplot(412)
+        for f in plotflows:
+            plotrate(self.flows[f].stats.bytesreceived, flowres, False, label=f)
+        plt.title('Flow receive rate')
+        plt.ylabel('Bytes/ms')
+
+        # RTT of flows
+        plt.subplot(413)
+        for f in plotflows:
+            plotsmooth(self.flows[f].stats.rttdelay, flowres, False, label=f)
+        plt.title('Flow RTT')
+        plt.ylabel('Time (ms)')
+
+        # Window size (This will break if there is no window size)
+        plt.subplot(414)
+        for f in plotflows:
+            plotsmooth(self.flows[f].stats.windowsize, flowres, label=f)
+        plt.title('Flow window sizes')
+        plt.ylabel('Size')
+
+        plt.subplots_adjust(hspace=.5)
+
+        # LINKS
+        # link byte flow rate
+        plt.figure()
+        plt.subplot(311)
+        for l in plotlinks:
+            plotrate(self.links[l].stats.bytesflowed, linkres, False, label=l)
+        plt.title('Link flow rate')
+        plt.ylabel('Flow Rate (Bytes/ms)')
+
+        # link buffer occupancy
+        plt.subplot(312)
+        for l in plotlinks:
+            plotsmooth(self.links[l].stats.bufferoccupancy, linkres, False, label=l)
+        plt.title('Link buffer size')
+        plt.ylabel('Buffer Occupancy (Bytes)')
+
+        # bytes lost
+        plt.subplot(313)
+        for l in plotlinks:
+            plotintervalsum(self.links[l].stats.lostpackets, linkres, label=l)
+        plt.title('Link packets lost')
+        plt.ylabel('Packets')
+
+        plt.subplots_adjust(hspace=.5)
+
+        # HOSTS
+        # Plot send and recieve rates
+        plt.figure()
+        for i in xrange(len(plothosts)):
+            h = plothosts[i]
+            plt.subplot(len(plothosts) * 100 + 10 + i + 1)
+            plotrate(self.nodes[h].stats.bytessent, hostres, label='%s-send' % h)
+            plotrate(self.nodes[h].stats.bytesreceived, hostres, label='%s-receive' % h)
+            plt.ylabel('Bytes/ms')
+
+        plt.show()

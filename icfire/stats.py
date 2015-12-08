@@ -666,6 +666,8 @@ def plotrate(datadict, resolution, xlabel=True, **kwargs):
     if xlabel:
         plt.xlabel("Time (ms)")
     zeroxaxis()
+    zeroyaxis()
+    plt.legend()
 
 
 def plotsmooth(datadict, resolution, xlabel=True, step=False, **kwargs):
@@ -687,6 +689,8 @@ def plotsmooth(datadict, resolution, xlabel=True, step=False, **kwargs):
     if xlabel:
         plt.xlabel("Time (ms)")
     zeroxaxis()
+    zeroyaxis()
+    plt.legend()
 
 
 def plotintervalsum(datadict, resolution, xlabel=True, **kwargs):
@@ -706,6 +710,8 @@ def plotintervalsum(datadict, resolution, xlabel=True, **kwargs):
     if xlabel:
         plt.xlabel("Time (ms)")
     zeroxaxis()
+    zeroyaxis()
+    plt.legend()
 
 
 def plotcumsum(datadict, xlabel=True, **kwargs):
@@ -722,6 +728,8 @@ def plotcumsum(datadict, xlabel=True, **kwargs):
     if xlabel:
         plt.xlabel("Time (ms)")
     zeroxaxis()
+    zeroyaxis()
+    plt.legend()
 
 
 def plotraw(datadict, xlabel=True, **kwargs):
@@ -734,6 +742,8 @@ def plotraw(datadict, xlabel=True, **kwargs):
     if xlabel:
         plt.xlabel("Time (ms)")
     zeroxaxis()
+    zeroyaxis()
+    plt.legend()
 
 
 def zeroxaxis():

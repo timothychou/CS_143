@@ -1,0 +1,144 @@
+{
+  "flows": [
+    {
+      "name": "F1",
+      "source_id": "S1",
+      "dest_id": "T1",
+      "timestamp": 500,
+      "bytes": 35000000,
+      "flowType": "FastTCPFlow"
+    },
+    {
+      "name": "F2",
+      "source_id": "S2",
+      "dest_id": "T2",
+      "timestamp": 10000,
+      "bytes": 15000000,
+      "flowType": "FastTCPFlow"
+    },
+    {
+      "name": "F3",
+      "source_id": "S3",
+      "dest_id": "T3",
+      "timestamp": 20000,
+      "bytes": 30000000,
+      "flowType": "FastTCPFlow"
+    }
+  ],
+  "hosts": [
+    {
+      "id": "S3"
+    },
+    {
+      "id": "S2"
+    },
+    {
+      "id": "S1"
+    },
+    {
+      "id": "T2"
+    },
+    {
+      "id": "T3"
+    },
+    {
+      "id": "T1"
+    }
+  ],
+  "routers": [
+    {
+      "init_time": -37000,
+      "id": "R4",
+      "static_routing": false
+    },
+    {
+      "init_time": -40000,
+      "id": "R1",
+      "static_routing": false
+    },
+    {
+      "init_time": -39000,
+      "id": "R2",
+      "static_routing": false
+    },
+    {
+      "init_time": -38000,
+      "id": "R3",
+      "static_routing": false
+    }
+  ],
+  "links": [
+    {
+      "id": "L1",
+      "source_id": "R1",
+      "target_id": "R2",
+      "rate": 10,
+      "delay": 10,
+      "buffsize": 128
+    },
+    {
+      "id": "L2",
+      "source_id": "R2",
+      "target_id": "R3",
+      "rate": 10,
+      "delay": 10,
+      "buffsize": 128
+    },
+    {
+      "id": "L3",
+      "source_id": "R3",
+      "target_id": "R4",
+      "rate": 10,
+      "delay": 10,
+      "buffsize": 128
+    },
+    {
+      "id": "LS1",
+      "source_id": "S1",
+      "target_id": "R1",
+      "rate": 12.5,
+      "delay": 10,
+      "buffsize": 128
+    },
+    {
+      "id": "LS2",
+      "source_id": "S2",
+      "target_id": "R1",
+      "rate": 12.5,
+      "delay": 10,
+      "buffsize": 128
+    },
+    {
+      "id": "LS3",
+      "source_id": "S3",
+      "target_id": "R3",
+      "rate": 12.5,
+      "delay": 10,
+      "buffsize": 128
+    },
+    {
+      "id": "LT1",
+      "source_id": "T1",
+      "target_id": "R4",
+      "rate": 12.5,
+      "delay": 10,
+      "buffsize": 128
+    },
+    {
+      "id": "LT2",
+      "source_id": "T2",
+      "target_id": "R2",
+      "rate": 12.5,
+      "delay": 10,
+      "buffsize": 128
+    },
+    {
+      "id": "LT3",
+      "source_id": "T3",
+      "target_id": "R4",
+      "rate": 12.5,
+      "delay": 10,
+      "buffsize": 128
+    }
+  ]
+}

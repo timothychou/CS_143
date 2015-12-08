@@ -44,7 +44,7 @@ class Link(NetworkObject):
         self.buffer = Queue()  # Queue using a cyclic array
         self.buffersize = 0    # size of items in the buffer, bytes
 
-        self.freeAt = 0
+        self.freeAt = -9999999
         self.stats = LinkStats(self.id)
 
     def addPackets(self, packets, sender):

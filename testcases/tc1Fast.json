@@ -1,0 +1,92 @@
+{
+  "flows": [
+    {
+      "name": "F1",
+      "source_id": "H1",
+      "dest_id": "H2",
+      "timestamp": 500,
+      "bytes": 20000000,
+      "flowType": "FastTCPFlow"
+    }
+  ],
+  "hosts": [
+    {
+      "id": "H1"
+    },
+    {
+      "id": "H2"
+    }
+  ],
+  "routers": [
+    {
+      "init_time": -30000,
+      "id": "R1",
+      "static_routing": false
+    },
+    {
+      "init_time": -29000,
+      "id": "R2",
+      "static_routing": false
+    },
+    {
+      "init_time": -28000,
+      "id": "R3",
+      "static_routing": false
+    },
+    {
+      "init_time": -27000,
+      "id": "R4",
+      "static_routing": false
+    }
+  ],
+  "links": [
+    {
+      "id": "L0",
+      "source_id": "H1",
+      "target_id": "R1",
+      "rate": 12.5,
+      "delay": 10,
+      "buffsize": 64
+    },
+    {
+      "id": "L1",
+      "source_id": "R1",
+      "target_id": "R2",
+      "rate": 10,
+      "delay": 10,
+      "buffsize": 64
+    },
+    {
+      "id": "L2",
+      "source_id": "R1",
+      "target_id": "R3",
+      "rate": 10,
+      "delay": 10,
+      "buffsize": 64
+    },
+    {
+      "id": "L3",
+      "source_id": "R2",
+      "target_id": "R4",
+      "rate": 10,
+      "delay": 10,
+      "buffsize": 64
+    },
+    {
+      "id": "L4",
+      "source_id": "R3",
+      "target_id": "R4",
+      "rate": 10,
+      "delay": 10,
+      "buffsize": 64
+    },
+    {
+      "id": "L5",
+      "source_id": "R4",
+      "target_id": "H2",
+      "rate": 12.5,
+      "delay": 10,
+      "buffsize": 64
+    }
+  ]
+}

@@ -63,8 +63,9 @@ class Flow(object):
         """
         raise NotImplementedError('This should be overriden by subclass')
 
-    def checkTimeout(self):
+    def checkTimeout(self, timestamp):
         """ Check timeout status of the flow.
+        :param timestamp: time that this occurs
         :return: A tuple of (list of new packets, new timeout)
         """
         raise NotImplementedError('This should be overriden by subclass')
@@ -194,6 +195,7 @@ class TCPRenoFlow(Flow):
         self.canum = 0
         self.fastrecovery = False
         self.maxwnd = -1
+        self.frnextSend = 0
 
         # RTT calculator
         self.srtt = 3000       # Default RTT is 3s
@@ -208,6 +210,7 @@ class TCPRenoFlow(Flow):
         self.beta = 1.5
         self.active = True
         self.nextTimeout = 0
+        self.ignoreuntil = 0
 
     def receiveAckPacket(self, packet, timestamp):
         """ A new ACK number means that the next packet can be sent.
@@ -220,12 +223,8 @@ class TCPRenoFlow(Flow):
         self.active = True
         resend = []
 
-        # jank plotting purposes
-        # logger.log2('%s\t%s\t%s\t%s' % (timer.time, self.cwnd, self.ssthresh,
-        # self.srrt))
-
         # Duplicate ACK
-        if packet.index == self.lastAck:
+        if packet.index == self.lastAck and timestamp > self.ignoreuntil:
             self.numLastAck += 1
 
             # Fast Retransmit/Fast Recovery
@@ -238,6 +237,7 @@ class TCPRenoFlow(Flow):
                 self.canum = 0
 
                 self.fastrecovery = True
+                self.frnextSend = self.nextSend
                 self.maxwnd = self.cwnd * 2
                 self.lastRepSent = max(self.lastRepSent, self.nextSend)
             elif self.fastrecovery and self.numLastAck > self.maxwnd:
@@ -268,9 +268,13 @@ class TCPRenoFlow(Flow):
 
             # Exit fast recovery
             if self.fastrecovery:
-                self.cwnd = self.ssthresh
-                self.canum = 0
-                self.fastrecovery = False
+                if packet.index >= self.frnextSend:
+                    self.cwnd = self.ssthresh
+                    self.canum = 0
+                    self.fastrecovery = False
+                else:
+                    self.ignoreuntil = timestamp + 1000
+                    self._timeout(timestamp)
 
             # Slow start
             if self.cwnd < self.ssthresh:
@@ -310,6 +314,9 @@ class TCPRenoFlow(Flow):
 
         self.nextSend = max(self.nextSend, self.lastAck + self.cwnd)
 
+        if len(newpackets)> 0:
+            self.active = True
+
         return newpackets
 
     def _timeout(self, timestamp):
@@ -325,7 +332,6 @@ class TCPRenoFlow(Flow):
             self.lastRepSent = max(self.lastRepSent, self.nextSend)
 
             self.nextSend = self.lastAck
-            self.ssthresh = max(self.cwnd / 2, 2)
 
             logger.log('TIMED OUT!')
             self.nextTimeout = timestamp + 2 * self.srtt
@@ -338,8 +344,9 @@ class TCPRenoFlow(Flow):
         """
 
         # Timed out, crash to window size 1.
+        self.rto = min(self.ubound, max(self.lbound, self.beta * self.srtt))
         if not self.active:
-            self.rto *= 2
+            # self.rto *= 2
 
             self._timeout(timestamp)
         else:
