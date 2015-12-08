@@ -7,7 +7,7 @@ from icfire.network import Network
 from icfire.eventhandler import EventHandler
 
 if __name__ == '__main__':
-    filename = 'tc2Fast.json'
+    filename = 'tc2Reno.json'
 
     # plotting specs
     flowinterval = 40
