@@ -1,4 +1,4 @@
 """ Keep track of time
 """
 
-time = -9999999
+simtime = -9999999

@@ -11,14 +11,13 @@ Hosts own flows, and also keeps tabs on various stats through a stats objects.
 
 from icfire.event import PacketEvent, UpdateFlowEvent
 from icfire.networkobjects.networkobject import Node
-from icfire.packet import *
+from icfire.packet import Packet, RoutingRequestPacket, RoutingPacket, AckPacket, DataPacket
 from icfire.stats import HostStats
 
 from icfire import logger
 
 
 class Host(Node):
-
     """ Represents a host in a network
 
     This class represents a host in a network that is able to receive and

@@ -29,7 +29,7 @@ class Event(object):
 
         # Keep track of order that Events are created to break ties for
         # timestamps
-        self._id = getUniqueEventId()
+        self._internalid = getUniqueEventId()
 
     def __cmp__(self, other):
         """ Overloaded comparison operator using timestamp for the Priority Queue.
@@ -37,7 +37,7 @@ class Event(object):
         e1 > e2 = True if e1 has a timestamp greater than e2
         """
         if self.timestamp == other.timestamp:
-            return self._id > other._id     # Use _id to break ties.
+            return self._internalid > other._internalid     # Use _id to break ties.
         return self.timestamp > other.timestamp
 
 

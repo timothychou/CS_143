@@ -1,20 +1,16 @@
-import sys
-import os
-
-sys.path.append(os.path.dirname(os.getcwd()))
-
 from icfire.network import Network
 from icfire.eventhandler import EventHandler
 
 if __name__ == '__main__':
-    filename = 'tc0Fast.json'
+    filename = 'tc0Reno.json'
+    # filename = 'tc0Fast.json'
 
     # plotting specs
-    flowinterval = 40
+    flowinterval = 100
     plotflows = ['F1']
-    linkinterval = 40
+    linkinterval = 100
     plotlinks = ['L1']
-    hostinterval = 40
+    hostinterval = 100
     plothosts = ['H1', 'H2']
 
     # load network
@@ -27,4 +23,4 @@ if __name__ == '__main__':
 
     # plot
     tc0.plotAll(flowinterval, plotflows, linkinterval, plotlinks,
-                hostinterval, plothosts, "Fast for TC0")
+                hostinterval, plothosts, filename[:filename.index('.')])

@@ -14,11 +14,10 @@ from icfire.event import LinkTickEvent, PacketEvent
 from icfire.networkobjects.networkobject import NetworkObject
 from icfire import logger
 from icfire.stats import LinkStats
-import icfire.timer as timer
+import icfire.simtimer as simtimer
 
 
 class Link(NetworkObject):
-
     """Represents link in a network
 
     This class represents a link in a network that packets can travel
@@ -41,9 +40,9 @@ class Link(NetworkObject):
         self.maxbuffersize = maxbuffersize * 1024
         self.id = linkid
 
-        self.buffer = Queue()       # Queue using a cyclic array
-        self.totalbuffersize = 0    # total size of items in the buffer, bytes
-        self.buffersizes = dict()   # size of items in buffer for A, B in bytes
+        self.buffer = Queue()  # Queue using a cyclic array
+        self.totalbuffersize = 0  # total size of items in the buffer, bytes
+        self.buffersizes = dict()  # size of items in buffer for A, B in bytes
         self.buffersizes[self.nodeA] = 0
         self.buffersizes[self.nodeB] = 0
 
@@ -64,7 +63,7 @@ class Link(NetworkObject):
         # If this is the first packet in the buffer, start the LinkTickEvents
         if self.buffer.qsize() == 0 and len(packets) > 0:
             newevents = [
-                LinkTickEvent(max(timer.time, self.freeAt), self,
+                LinkTickEvent(max(simtimer.simtime, self.freeAt), self,
                               'Link ' + self.id + ' processes a packet')]
 
         for p in packets:
@@ -72,13 +71,13 @@ class Link(NetworkObject):
                 # Drop em' like its hot
                 logger.log('Dropping packet %s from host %s at link %s' %
                            (p.index, p.source, self.id))
-                self.stats.addLostPackets(timer.time, 1)
+                self.stats.addLostPackets(simtimer.simtime, 1)
             else:
                 self.buffer.put((p, sender))
                 self.totalbuffersize += p.size
                 self.buffersizes[sender] += p.size
 
-        self.stats.updateBufferOccupancy(timer.time, self.totalbuffersize)
+        self.stats.updateBufferOccupancy(simtimer.simtime, self.totalbuffersize)
 
         return newevents
 
@@ -94,7 +93,7 @@ class Link(NetworkObject):
         self.buffer.put((packet, sender))
         self.totalbuffersize += packet.size
         self.buffersizes[sender] += packet.size
-        self.stats.updateBufferOccupancy(timer.time, self.totalbuffersize)
+        self.stats.updateBufferOccupancy(simtimer.simtime, self.totalbuffersize)
 
         # If this is the first packet in the buffer, start the LinkTickEvents
         if self.buffer.qsize() == 1:
@@ -113,7 +112,7 @@ class Link(NetworkObject):
         packet, sender = self.buffer.get()
         self.totalbuffersize -= packet.size
         self.buffersizes[sender] -= packet.size
-        self.stats.updateBufferOccupancy(timer.time, self.totalbuffersize)
+        self.stats.updateBufferOccupancy(simtimer.simtime, self.totalbuffersize)
 
         # Generate a new PacketEvent
         # Use event.timestamp because this is when the packet is actually

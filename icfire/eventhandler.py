@@ -28,7 +28,7 @@ from Queue import PriorityQueue
 from tqdm import trange
 
 import icfire.logger as logger
-import icfire.timer as timer
+import icfire.simtimer as simtimer
 
 
 class EventHandler(object):
@@ -68,7 +68,7 @@ class EventHandler(object):
         # When we get an object from the queue, do not block if empty.
         # Simply raise an Empty exception. This may be changed later.
         event = self._queue.get(block=False)
-        timer.time = event.timestamp
+        simtimer.simtime = event.timestamp
 
         # TODO disabled for now
         # if realtime:

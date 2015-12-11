@@ -8,10 +8,10 @@ Stats encapsulate the statistics and data of each node
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import ndimage
-import time as timer
+import time as realtimer
+
 
 class Stats(object):
-
     """Base class for statistical objects"""
 
     def __init__(self, parent_id):
@@ -23,9 +23,11 @@ class Stats(object):
         raise NotImplementedError(
             'Handling of analysis not implemented')
 
-DELAY = .5
-class HostStats(Stats):
 
+DELAY = .5
+
+
+class HostStats(Stats):
     """Statistics of a node
 
     This class should model the per-host send/recieve rate
@@ -38,22 +40,22 @@ class HostStats(Stats):
         self.realTimePlot = realTimePlot
         if self.realTimePlot:
             plt.ion()
-            self.curTime = [timer.time()] * 3
+            self.curTime = [realtimer.time()] * 3
             if not figure:
                 self.fig = plt.figure()
             if not subPlot:
                 self.ax = self.fig.add_subplot(111)
             else:
                 self.ax = self.fig.add_subplot(subPlot)
-            self.l1 = self.ax.plot([],[],label='sent')[0]
-            self.l2 = self.ax.plot([],[],label='received')[0]
+            self.l1 = self.ax.plot([], [], label='sent')[0]
+            self.l2 = self.ax.plot([], [], label='received')[0]
             self.xMax = 0
             self.yMax = 0
             self.yMin = 0
             self.interval = interval
             plt.legend()
             self.ax.set_title("Bytes send and recieve rates from host " +
-                  str(self.parent_id))
+                              str(self.parent_id))
             self.ax.set_ylabel("Bytes/ms")
             self.ax.set_xlabel("Time (ms)")
 
@@ -69,20 +71,20 @@ class HostStats(Stats):
             self.bytessent[timestamp] = bytes
 
         if self.realTimePlot:
-            if timer.time() > self.curTime[0] + DELAY:
-                self.curTime[0] = timer.time()
+            if realtimer.time() > self.curTime[0] + DELAY:
+                self.curTime[0] = realtimer.time()
                 time, rate = calcRate(self.bytessent, self.interval)
-                
+
                 if len(time) > 0:
                     self.xMax = updateMax(self.xMax, max(time), 1.5)
                     self.yMax = updateMax(self.yMax, max(rate), 1.2)
                     self.yMin = updateMin(self.yMin, min(rate), 1.2)
-            
+
                     self.ax.axis([0, self.xMax, self.yMin, self.yMax])
                     self.l1.set_data(time, rate)
-                
-                if timer.time() > self.curTime[-1] + DELAY:
-                    self.curTime[-1] = timer.time()
+
+                if realtimer.time() > self.curTime[-1] + DELAY:
+                    self.curTime[-1] = realtimer.time()
                     self.fig.canvas.draw()
 
     def addBytesRecieved(self, timestamp, bytes):
@@ -96,8 +98,8 @@ class HostStats(Stats):
         else:
             self.bytesreceived[timestamp] = bytes
         if self.realTimePlot:
-            if timer.time() > self.curTime[1] + DELAY:
-                self.curTime[1] = timer.time()
+            if realtimer.time() > self.curTime[1] + DELAY:
+                self.curTime[1] = realtimer.time()
                 time, rate = calcRate(self.bytesreceived, self.interval)
 
                 if len(time) > 0:
@@ -108,8 +110,8 @@ class HostStats(Stats):
                     self.ax.axis([0, self.xMax, self.yMin, self.yMax])
                     self.l2.set_data(time, rate)
 
-                if timer.time() > self.curTime[-1] + DELAY:
-                    self.curTime[-1] = timer.time()
+                if realtimer.time() > self.curTime[-1] + DELAY:
+                    self.curTime[-1] = realtimer.time()
                     self.fig.canvas.draw()
 
     def analyze(self, interval=40):
@@ -125,7 +127,6 @@ class HostStats(Stats):
 
 
 class FlowStats(Stats):
-
     """Statistics of a flow
 
     This class should model
@@ -139,36 +140,35 @@ class FlowStats(Stats):
         self.bytesreceived = dict()
         self.rttdelay = dict()
         self.windowsize = dict()
-        
+
         self.realTimePlot = realTimePlot
         if self.realTimePlot:
             plt.ion()
-            self.curTime = [timer.time()] * 5
+            self.curTime = [realtimer.time()] * 5
             if not figure:
                 self.fig = plt.figure()
-            self.ax = [self.fig.add_subplot(4,1,i) for i in range(4)]
+            self.ax = [self.fig.add_subplot(4, 1, i) for i in range(4)]
             self.l = []
-            self.l.append(self.ax[0].plot([],[], label='bytes sent')[0])
-            self.l.append(self.ax[0].plot([],[], label='bytes received')[0])
-            self.ax[0].set_title('Cumulative Bytes sent and received in flow ' + 
-                             str(self.parent_id))
+            self.l.append(self.ax[0].plot([], [], label='bytes sent')[0])
+            self.l.append(self.ax[0].plot([], [], label='bytes received')[0])
+            self.ax[0].set_title('Cumulative Bytes sent and received in flow ' +
+                                 str(self.parent_id))
 
             self.ax[0].set_ylabel("Bytes")
             self.ax[0].set_xlabel('Time (ms)')
 
-            self.l.append(self.ax[1].plot([],[], label='sent')[0])
-            self.l.append(self.ax[1].plot([],[], label='bytes received')[0])
-            self.ax[1].set_title('Send and receive data rates in flow ' + 
-                             str(self.parent_id))
+            self.l.append(self.ax[1].plot([], [], label='sent')[0])
+            self.l.append(self.ax[1].plot([], [], label='bytes received')[0])
+            self.ax[1].set_title('Send and receive data rates in flow ' +
+                                 str(self.parent_id))
             self.ax[1].set_ylabel('Bytes/ms')
 
-
-            self.l.append(self.ax[2].plot([],[])[0])
-            self.ax[2].set_title('Rount-Trip delay in flow ' + 
-                             str(self.parent_id))
+            self.l.append(self.ax[2].plot([], [])[0])
+            self.ax[2].set_title('Rount-Trip delay in flow ' +
+                                 str(self.parent_id))
             self.ax[2].set_ylabel('Round-Trip delay (ms)')
 
-            self.l.append(self.ax[3].plot([],[])[0])
+            self.l.append(self.ax[3].plot([], [])[0])
             self.ax[3].set_title('Window size of flow ' + str(self.parent_id))
             self.ax[3].set_ylabel('Window size')
 
@@ -180,9 +180,6 @@ class FlowStats(Stats):
 
             self.fig.subplots_adjust(hspace=.5)
 
-
-
-
     def addRTT(self, timestamp, rttd):
         """ Function called to aggregate data into the stats
 
@@ -191,8 +188,8 @@ class FlowStats(Stats):
         """
         self.rttdelay[timestamp] = rttd
         if self.realTimePlot:
-            if timer.time() > self.curTime[0] + DELAY:
-                self.curTime[0] = timer.time()
+            if realtimer.time() > self.curTime[0] + DELAY:
+                self.curTime[0] = realtimer.time()
                 time, rate = calcSmooth(self.rttdelay, self.interval)
 
                 if len(time) > 0:
@@ -203,8 +200,8 @@ class FlowStats(Stats):
                     self.ax[2].axis([0, self.xMax[2], self.yMin[2], self.yMax[2]])
                     self.l[4].set_data(time, rate)
 
-                if timer.time() > self.curTime[-1] + DELAY:
-                    self.curTime[-1] = timer.time()
+                if realtimer.time() > self.curTime[-1] + DELAY:
+                    self.curTime[-1] = realtimer.time()
                     self.fig.canvas.draw()
 
     def addBytesSent(self, timestamp, bytes):
@@ -219,8 +216,8 @@ class FlowStats(Stats):
             self.bytessent[timestamp] = bytes
 
         if self.realTimePlot:
-            if timer.time() > self.curTime[1] + DELAY:
-                self.curTime[1] = timer.time()
+            if realtimer.time() > self.curTime[1] + DELAY:
+                self.curTime[1] = realtimer.time()
                 time, cumSum = calcCumsum(self.bytessent)
                 time2, rate = calcRate(self.bytessent, self.interval)
 
@@ -235,11 +232,11 @@ class FlowStats(Stats):
                     self.xMax[1] = updateMax(self.xMax[1], max(time2), 1.5)
                     self.yMax[1] = updateMax(self.yMax[1], max(rate), 1.2)
                     self.yMin[1] = updateMin(self.yMin[1], min(rate), 1.2)
-                    self.ax[0].axis([0, self.xMax[0], self.yMin[0],self.yMax[0]])
+                    self.ax[0].axis([0, self.xMax[0], self.yMin[0], self.yMax[0]])
                     self.l[2].set_data(time2, rate)
 
-                if timer.time() > self.curTime[-1] + DELAY:
-                    self.curTime[-1] = timer.time()
+                if realtimer.time() > self.curTime[-1] + DELAY:
+                    self.curTime[-1] = realtimer.time()
                     self.fig.canvas.draw()
 
     def addBytesReceived(self, timestamp, bytes):
@@ -249,7 +246,6 @@ class FlowStats(Stats):
         :param bytes: number of bytes
         """
 
-
         if timestamp in self.bytesreceived:
             self.bytesreceived[timestamp] += bytes
 
@@ -257,8 +253,8 @@ class FlowStats(Stats):
             self.bytesreceived[timestamp] = bytes
 
         if self.realTimePlot:
-            if timer.time() > self.curTime[2] + DELAY:
-                self.curTime[2] = timer.time()
+            if realtimer.time() > self.curTime[2] + DELAY:
+                self.curTime[2] = realtimer.time()
                 time, cumSum = calcCumsum(self.bytesreceived)
                 time2, rate = calcRate(self.bytesreceived, self.interval)
 
@@ -273,11 +269,11 @@ class FlowStats(Stats):
                     self.xMax[1] = updateMax(self.xMax[1], max(time2), 1.5)
                     self.yMax[1] = updateMax(self.yMax[1], max(rate), 1.2)
                     self.yMin[1] = updateMin(self.yMin[1], min(rate), 1.2)
-                    self.ax[1].axis([0, self.xMax[1], self.yMin[1],self.yMax[1]])
+                    self.ax[1].axis([0, self.xMax[1], self.yMin[1], self.yMax[1]])
                     self.l[3].set_data(time2, rate)
 
-                if timer.time() > self.curTime[-1] + DELAY:
-                    self.curTime[-1] = timer.time()
+                if realtimer.time() > self.curTime[-1] + DELAY:
+                    self.curTime[-1] = realtimer.time()
                     self.fig.canvas.draw()
 
     def updateCurrentWindowSize(self, timestamp, cwnd):
@@ -288,8 +284,8 @@ class FlowStats(Stats):
         """
         self.windowsize[timestamp] = cwnd
         if self.realTimePlot:
-            if timer.time() > self.curTime[3] + DELAY:
-                self.curTime[3] = timer.time()
+            if realtimer.time() > self.curTime[3] + DELAY:
+                self.curTime[3] = realtimer.time()
                 time, cwnd = calcSmooth(self.windowsize, self.interval)
                 if len(time) > 0:
                     self.xMax[3] = updateMax(self.xMax[3], max(time), 1.5)
@@ -298,8 +294,8 @@ class FlowStats(Stats):
                     self.ax[3].axis([0, self.xMax[3], self.yMin[3], self.yMax[3]])
                     self.l[5].set_data(time, cwnd)
 
-                    if timer.time() > self.curTime[-1] + DELAY:
-                        self.curTime[-1] = timer.time()
+                    if realtimer.time() > self.curTime[-1] + DELAY:
+                        self.curTime[-1] = realtimer.time()
                         self.fig.canvas.draw()
 
     def analyze(self, interval=40, sameFigure=True, step=False):
@@ -371,7 +367,6 @@ class FlowStats(Stats):
 
 
 class LinkStats(Stats):
-
     """Statistics of a node
 
     This class should model
@@ -391,28 +386,28 @@ class LinkStats(Stats):
         self.realTimePlot = realTimePlot
         if self.realTimePlot:
             plt.ion()
-            self.curTime = [timer.time()] * 4
+            self.curTime = [realtimer.time()] * 4
             if not figure:
                 self.fig = plt.figure()
             else:
                 self.fig = figure
-            self.ax = [self.fig.add_subplot(4,1,i) for i in range(4)]
-            self.l = [self.ax[i].plot([],[])[0] for i in range(4)]
+            self.ax = [self.fig.add_subplot(4, 1, i) for i in range(4)]
+            self.l = [self.ax[i].plot([], [])[0] for i in range(4)]
 
             self.ax[0].set_title('Byte flow rate through link ' +
                                  str(self.parent_id))
             self.ax[0].set_ylabel('Flow Rate (Byte/ms)')
             self.ax[0].set_xlabel('Time (ms)')
 
-            self.ax[1].set_title('Cummulative byte flow through link ' + 
+            self.ax[1].set_title('Cummulative byte flow through link ' +
                                  str(self.parent_id))
             self.ax[1].set_ylabel('Bytes')
 
-            self.ax[2].set_title('Packets lost in link ' + 
+            self.ax[2].set_title('Packets lost in link ' +
                                  str(self.parent_id))
             self.ax[2].set_ylabel('Packets')
 
-            self.ax[3].set_title('Buffer occupancy in link ' + 
+            self.ax[3].set_title('Buffer occupancy in link ' +
                                  str(self.parent_id))
             self.ax[3].set_ylabel('Occupancy (kb)')
 
@@ -420,12 +415,8 @@ class LinkStats(Stats):
             self.yMax = [0] * len(self.ax)
             self.yMin = [0] * len(self.ax)
             self.interval = interval
-            
+
             self.fig.subplots_adjust(hspace=.5)
-
-            
-
-            
 
     def addLostPackets(self, timestamp, nlost):
         if timestamp in self.lostpackets:
@@ -434,20 +425,20 @@ class LinkStats(Stats):
             self.lostpackets[timestamp] = nlost
 
         if self.realTimePlot:
-            if timer.time() > self.curTime[0] + DELAY:
-                self.curTime[0] = timer.time()
+            if realtimer.time() > self.curTime[0] + DELAY:
+                self.curTime[0] = realtimer.time()
 
                 time, packets = calcIntervalsum(self.lostpackets, self.interval)
                 if len(time) > 0:
-                    
+
                     self.xMax[2] = updateMax(self.xMax[2], max(time), 1.5)
                     self.yMax[2] = updateMax(self.yMax[2], max(packets), 1.2)
                     self.yMin[2] = updateMin(self.yMin[2], min(packets), 1.2)
-                    self.ax[2].axis([0, self.xMax[2], self.yMin[2], self.yMax[2\
-]])
+                    self.ax[2].axis([0, self.xMax[2], self.yMin[2], self.yMax[2 \
+                        ]])
                     self.l[2].set_data(time, packets)
-                    if timer.time() > self.curTime[-1] + DELAY:
-                        self.curTime[-1] = timer.time()
+                    if realtimer.time() > self.curTime[-1] + DELAY:
+                        self.curTime[-1] = realtimer.time()
                         self.fig.canvas.draw()
 
     def addBytesFlowed(self, timestamp, bytes):
@@ -457,8 +448,8 @@ class LinkStats(Stats):
             self.bytesflowed[timestamp] = bytes
 
         if self.realTimePlot:
-            if timer.time() > self.curTime[1] + DELAY:
-                self.curTime[1] = timer.time()
+            if realtimer.time() > self.curTime[1] + DELAY:
+                self.curTime[1] = realtimer.time()
 
                 time, rate = calcRate(self.bytesflowed, self.interval)
                 time2, cumSum = calcCumsum(self.bytesflowed)
@@ -467,27 +458,27 @@ class LinkStats(Stats):
                     self.xMax[0] = updateMax(self.xMax[0], max(time), 1.5)
                     self.yMax[0] = updateMax(self.yMax[0], max(rate), 1.2)
                     self.yMin[0] = updateMin(self.yMin[0], min(rate), 1.2)
-                    self.ax[0].axis([0, self.xMax[0], self.yMin[0], self.yMax[0\
-]])
+                    self.ax[0].axis([0, self.xMax[0], self.yMin[0], self.yMax[0 \
+                        ]])
                     self.l[0].set_data(time, rate)
                 if len(time2) > 0:
                     self.xMax[1] = updateMax(self.xMax[1], max(time2), 1.5)
                     self.yMax[1] = updateMax(self.yMax[1], max(cumSum), 1.2)
                     self.yMin[1] = updateMin(self.yMin[1], min(cumSum), 1.2)
-                    self.ax[1].axis([0, self.xMax[1], self.yMin[1], self.yMax[1\
-]])
+                    self.ax[1].axis([0, self.xMax[1], self.yMin[1], self.yMax[1 \
+                        ]])
                     self.l[1].set_data(time2, cumSum)
 
-                if timer.time() > self.curTime[-1] + DELAY:
-                    self.curTime[-1] = timer.time()
+                if realtimer.time() > self.curTime[-1] + DELAY:
+                    self.curTime[-1] = realtimer.time()
                     self.fig.canvas.draw()
 
     def updateBufferOccupancy(self, timestamp, buffersize):
         self.bufferoccupancy[timestamp] = buffersize
 
         if self.realTimePlot:
-            if timer.time() > self.curTime[2] + DELAY:
-                self.curTime[2] = timer.time()
+            if realtimer.time() > self.curTime[2] + DELAY:
+                self.curTime[2] = realtimer.time()
 
                 time, occupancy = calcRate(self.bufferoccupancy, self.interval)
 
@@ -495,36 +486,36 @@ class LinkStats(Stats):
                     self.xMax[3] = updateMax(self.xMax[3], max(time), 1.5)
                     self.yMax[3] = updateMax(self.yMax[3], max(occupancy), 1.2)
                     self.yMin[3] = updateMin(self.yMin[3], min(occupancy), 1.2)
-                    self.ax[3].axis([0, self.xMax[3], self.yMin[3], self.yMax[3\
-]])
+                    self.ax[3].axis([0, self.xMax[3], self.yMin[3], self.yMax[3 \
+                        ]])
                     self.l[3].set_data(time, occupancy)
-                    if timer.time() > self.curTime[-1] + DELAY:
-                        self.curTime[-1] = timer.time()
+                    if realtimer.time() > self.curTime[-1] + DELAY:
+                        self.curTime[-1] = realtimer.time()
                         self.fig.canvas.draw()
 
     def analyze(self, interval=40, sameFigure=True, step=False):
         plt.figure()
         if sameFigure:
-            plt.subplot(4,1,1)
+            plt.subplot(4, 1, 1)
         plotrate(self.bytesflowed, interval, not sameFigure)
         plt.title("Byte flow rate through link " +
                   str(self.parent_id))
         plt.ylabel("Flow Rate (Byte/ms)")
 
         # Plots Cumulative
-        
+
         if sameFigure:
-            plt.subplot(4,1,2)
+            plt.subplot(4, 1, 2)
         else:
             plt.figure()
-        
+
         plotcumsum(self.bytesflowed, not sameFigure)
         plt.title("Cummulative byte flow through link " +
                   str(self.parent_id))
         plt.ylabel("Bytes")
 
         if sameFigure:
-            plt.subplot(4,1,3)
+            plt.subplot(4, 1, 3)
         else:
             plt.figure()
         plotintervalsum(self.lostpackets, interval, not sameFigure)
@@ -533,7 +524,7 @@ class LinkStats(Stats):
         plt.ylabel("Packets")
 
         if sameFigure:
-            plt.subplot(4,1,4)
+            plt.subplot(4, 1, 4)
         else:
             plt.figure()
         plotrate(self.bufferoccupancy, interval)
@@ -543,7 +534,9 @@ class LinkStats(Stats):
 
         plt.subplots_adjust(hspace=.5)
 
+
 """ Helper Functions """
+
 
 def calcRate(datadict, resolution):
     """ Calculates the rate of data value averaged over a time interval
@@ -556,14 +549,14 @@ def calcRate(datadict, resolution):
 
     sortedtimes = sorted(datadict.keys())
     sorteddata = [datadict[key] for key in sortedtimes]
-    assert(len(sortedtimes) == len(sorteddata))
+    assert (len(sortedtimes) == len(sorteddata))
     time = 0
     datatotal = 0
     times = []
     rates = []
 
     for i in range(len(sortedtimes)):
-        while(True):
+        while (True):
             if sortedtimes[i] < time:
                 datatotal += sorteddata[i]
                 break
@@ -572,7 +565,9 @@ def calcRate(datadict, resolution):
                 rates.append(datatotal / float(resolution))
                 datatotal = 0
                 time += resolution
-    return (times, rates)
+
+    return times, rates
+
 
 def calcSmooth(datadict, resolution):
     """ Calculates the values of a data point averaged over the interval
@@ -585,14 +580,14 @@ def calcSmooth(datadict, resolution):
     """
     sortedtimes = sorted(datadict.keys())
     sorteddata = [datadict[key] for key in sortedtimes]
-    assert(len(sortedtimes) == len(sorteddata))
+    assert (len(sortedtimes) == len(sorteddata))
     time = 0
     datatotal = 0
     times = []
     rates = []
     count = 0
     for i in range(len(sortedtimes)):
-        while(True):
+        while (True):
             if sortedtimes[i] < time:
                 datatotal += sorteddata[i]
                 count += 1
@@ -606,7 +601,8 @@ def calcSmooth(datadict, resolution):
             else:
                 time += resolution
 
-    return (times, rates)
+    return times, rates
+
 
 def calcIntervalsum(datadict, resolution):
     """ Calculates the sum of data value aggregated over a time interval
@@ -618,13 +614,13 @@ def calcIntervalsum(datadict, resolution):
     """
     sortedtimes = sorted(datadict.keys())
     sorteddata = [datadict[key] for key in sortedtimes]
-    assert(len(sortedtimes) == len(sorteddata))
+    assert (len(sortedtimes) == len(sorteddata))
     time = 0
     datatotal = 0
     times = []
     rates = []
     for i in range(len(sortedtimes)):
-        while(True):
+        while (True):
             if sortedtimes[i] < time:
                 datatotal += sorteddata[i]
                 break
@@ -634,7 +630,8 @@ def calcIntervalsum(datadict, resolution):
                 datatotal = 0
                 time += resolution
 
-    return (times, rates)
+    return times, rates
+
 
 def calcCumsum(datadict):
     """ Calculates the cumulative sum 
@@ -643,12 +640,42 @@ def calcCumsum(datadict):
     """
     sortedtimes = sorted(datadict.keys())
     sorteddata = [datadict[key] for key in sortedtimes]
-    assert(len(sortedtimes) == len(sorteddata))
+    assert (len(sortedtimes) == len(sorteddata))
     cumsum = np.cumsum(sorteddata)
 
-    return (sortedtimes, cumsum)
+    return sortedtimes, cumsum
 
-def plotrate(datadict, resolution, xlabel=True, **kwargs):
+
+def calcMax(datadict, resolution):
+    """ Calculates the max of data value aggregated over a time interval
+
+    Creates discrete time interval sums of all values
+
+    :param datadict: dictionary of time-value pairs
+    :param resolution: interval in milliseconds to aggregate over
+    """
+    sortedtimes = sorted(datadict.keys())
+    sorteddata = [datadict[key] for key in sortedtimes]
+    assert (len(sortedtimes) == len(sorteddata))
+    time = 0
+    currmax = 0
+    times = []
+    maxes = []
+    for i in range(len(sortedtimes)):
+        while (True):
+            if sortedtimes[i] < time:
+                currmax = max(currmax, sorteddata[i])
+                break
+            else:
+                times.append(time)
+                maxes.append(currmax)
+                currmax = 0
+                time += resolution
+
+    return times, maxes
+
+
+def plotrate(datadict, resolution, xlabel=True, step=False, **kwargs):
     """ Plots the rate of data value averaged over a time interval
 
     This works by creating discrete time interval and averaging all values
@@ -661,7 +688,10 @@ def plotrate(datadict, resolution, xlabel=True, **kwargs):
 
     times, rates = calcRate(datadict, resolution)
 
-    plt.plot(times, rates, **kwargs)
+    if step:
+        plt.step(times, rates, **kwargs)
+    else:
+        plt.plot(times, rates, **kwargs)
     plt.autoscale(True)
     if xlabel:
         plt.xlabel("Time (ms)")
@@ -681,6 +711,7 @@ def plotsmooth(datadict, resolution, xlabel=True, step=False, **kwargs):
     :param kwargs: dictionary, or keyword arguments to be passed to pyplot
     """
     times, rates = calcSmooth(datadict, resolution)
+
     if step:
         plt.step(times, rates, **kwargs)
     else:
@@ -693,7 +724,7 @@ def plotsmooth(datadict, resolution, xlabel=True, step=False, **kwargs):
     plt.legend()
 
 
-def plotintervalsum(datadict, resolution, xlabel=True, **kwargs):
+def plotintervalsum(datadict, resolution, xlabel=True, step=False, **kwargs):
     """ Plots the sum of data value aggregated over a time interval
 
     This works by creating discrete time interval and summing all values
@@ -705,7 +736,10 @@ def plotintervalsum(datadict, resolution, xlabel=True, **kwargs):
     """
     times, rates = calcIntervalsum(datadict, resolution)
 
-    plt.plot(times, rates, **kwargs)
+    if step:
+        plt.step(times, rates, **kwargs)
+    else:
+        plt.plot(times, rates, **kwargs)
     plt.autoscale(True)
     if xlabel:
         plt.xlabel("Time (ms)")
@@ -714,7 +748,7 @@ def plotintervalsum(datadict, resolution, xlabel=True, **kwargs):
     plt.legend()
 
 
-def plotcumsum(datadict, xlabel=True, **kwargs):
+def plotcumsum(datadict, xlabel=True, step=False, **kwargs):
     """ Plots a cumulative sum
 
     :param datadict: dictionary of time-value pairs
@@ -723,7 +757,34 @@ def plotcumsum(datadict, xlabel=True, **kwargs):
 
     sortedtimes, cumsum = calcCumsum(datadict)
 
-    plt.plot(sortedtimes, cumsum, **kwargs)
+    if step:
+        plt.step(sortedtimes, cumsum, **kwargs)
+    else:
+        plt.plot(sortedtimes, cumsum, **kwargs)
+    plt.autoscale(True)
+    if xlabel:
+        plt.xlabel("Time (ms)")
+    zeroxaxis()
+    zeroyaxis()
+    plt.legend()
+
+
+def plotmaxes(datadict, resolution, xlabel=True, step=False, **kwargs):
+    """ Plots the max data point averaged over the interval
+
+    This works by creating discrete time interval and taking the max of
+    all values within said interval
+
+    :param datadict: dictionary of time-value pairs
+    :param resolution: interval in millisecond to aggregate over
+    :param kwargs: dictionary, or keyword arguments to be passed to pyplot
+    """
+    times, maxes = calcMax(datadict, resolution)
+
+    if step:
+        plt.step(times, maxes, **kwargs)
+    else:
+        plt.plot(times, maxes, **kwargs)
     plt.autoscale(True)
     if xlabel:
         plt.xlabel("Time (ms)")
@@ -761,6 +822,7 @@ def zeroyaxis():
     cumaxis[2] = 0
     plt.axis(cumaxis)
 
+
 def updateMax(curMax, newMax, ratio=1.2, threshold=.9):
     """ Updates curMax value with new max by ratio if needed
 
@@ -772,6 +834,7 @@ def updateMax(curMax, newMax, ratio=1.2, threshold=.9):
     if newMax > curMax * .9:
         curMax = newMax * ratio
     return curMax
+
 
 def updateMin(curMin, newMin, ratio=1.2, threshold=.9):
     """ Updates curMin value with new min by ratio if needed
@@ -787,6 +850,7 @@ def updateMin(curMin, newMin, ratio=1.2, threshold=.9):
         else:
             curMin = newMin / ratio
     return curMin
+
 
 """ The following functions are experimental. Do not use """
 

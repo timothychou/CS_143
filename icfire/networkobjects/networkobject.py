@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 icfire.networkobject
 ~~~~~~~~~~~~~~~~~~~~
@@ -14,7 +12,6 @@ from icfire.event import Event
 
 
 class NetworkObject(object):
-
     """abstract class for all network objects"""
 
     def __init__(self):
@@ -44,7 +41,6 @@ class NetworkObject(object):
 
 
 class Node(NetworkObject):
-
     """ abstract class that represents a node in a network
 
     This class represents a node in a network connected by edges"""

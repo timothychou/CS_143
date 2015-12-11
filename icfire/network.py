@@ -21,11 +21,11 @@ from icfire.event import UpdateRoutingTableEvent, UpdateFlowEvent, UpdateWindowE
 from icfire.networkobjects.link import Link
 from icfire.networkobjects.router import Router
 from icfire.networkobjects.host import Host
-from icfire.stats import *
+from icfire.stats import plotrate, plotsmooth, plotmaxes, plotintervalsum
+import matplotlib.pyplot as plt
 
 
 class Network(object):
-
     """This class contains all information encapsulating a computer network.
 
     The network is kept track of as a dictionary of objects, as well as within
@@ -231,7 +231,7 @@ class Network(object):
         plt.show()
 
     def plotAll(self, flowres, plotflows, linkres, plotlinks,
-                hostres, plothosts, flowType="Reno"):
+                hostres, plothosts, name):
         """ plot data for specified flows, links, hosts
 
         :param flowres: resolution for flow plots
@@ -247,28 +247,28 @@ class Network(object):
         # Byte Send Rate of all 3
         plt.figure()
         plt.subplot(411)
-        plt.title("Flow statistics using TCP " + flowType)
+        plt.title("Flow statistics using " + name)
         for f in plotflows:
-            plotrate(self.flows[f].stats.bytessent, flowres, False, label=f)
+            plotrate(self.flows[f].stats.bytessent, flowres, xlabel=False, label=f)
         plt.ylabel('Send rate (Bytes/ms)')
 
         # Byte Recieved Rate of all 3
         plt.subplot(412)
         for f in plotflows:
-            plotrate(self.flows[f].stats.bytesreceived, flowres, False, label=f)
+            plotrate(self.flows[f].stats.bytesreceived, flowres, xlabel=False, label=f)
         plt.ylabel('Recieve rate (Bytes/ms)')
 
         # RTT of flows
         plt.subplot(413)
         for f in plotflows:
-            plotsmooth(self.flows[f].stats.rttdelay, flowres, False, label=f)
+            plotsmooth(self.flows[f].stats.rttdelay, flowres, xlabel=False, step=True, label=f)
         plt.ylabel('Flow RTT (ms)')
 
         # Window size (This will break if there is no window size)
         plt.subplot(414)
         for f in plotflows:
             if self.flows[f].stats.windowsize:
-                plotsmooth(self.flows[f].stats.windowsize, flowres, label=f)
+                plotsmooth(self.flows[f].stats.windowsize, flowres, step=True, label=f)
         plt.ylabel('Window size')
 
         plt.subplots_adjust(hspace=.5)
@@ -277,16 +277,16 @@ class Network(object):
         # link byte flow rate
         plt.figure()
         plt.subplot(311)
-        plt.title("Link statistics using TCP " + flowType)
+        plt.title("Link statistics using " + name)
         for l in plotlinks:
-            plotrate(self.links[l].stats.bytesflowed, linkres, False, label=l)
+            plotrate(self.links[l].stats.bytesflowed, linkres, xlabel=False, label=l)
         plt.ylabel('Flow Rate (Bytes/ms)')
 
         # link buffer occupancy
         plt.subplot(312)
         for l in plotlinks:
-            plotsmooth(
-                self.links[l].stats.bufferoccupancy, linkres, False, label=l)
+            plotmaxes(
+                self.links[l].stats.bufferoccupancy, linkres, xlabel=False, step=True, label=l)
         plt.ylabel('Buffer Occupancy (Bytes)')
 
         # bytes lost
@@ -303,7 +303,7 @@ class Network(object):
         for i in xrange(len(plothosts)):
             h = plothosts[i]
             plt.subplot(len(plothosts) * 100 + 10 + i + 1)  # dank code man
-            plt.title("Host " + h + " using TCP " + flowType)
+            plt.title("Host " + h + " using " + name)
             plotrate(
                 self.nodes[h].stats.bytessent, hostres, label='%s-send' % h)
             plotrate(

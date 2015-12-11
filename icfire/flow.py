@@ -14,15 +14,14 @@ Note that SuperSimpleFlow and SuperSimpleFlow2 are deprecated
 
 """
 
-
-import logger
+from icfire import logger
 from icfire.packet import AckPacket
 from icfire.packet import DataPacket
 from icfire.stats import FlowStats
 from icfire.event import UpdateWindowEvent
 
-class Flow(object):
 
+class Flow(object):
     """ Abstract class representing a Flow from one host to another.
 
     There are many types of Flows governed by different congestion control
@@ -84,7 +83,7 @@ class SuperSimpleFlow(Flow):
         """
         super(SuperSimpleFlow, self).__init__(source_id, dest_id, bytes, flowId)
 
-        self.lastAck = 0    # last received ACK number
+        self.lastAck = 0  # last received ACK number
         self.lastSent = -1  # last packet index sent
 
     def receiveAckPacket(self, packet, timestamp):
@@ -115,7 +114,6 @@ class SuperSimpleFlow(Flow):
 
 
 class SuperSimpleFlow2(Flow):
-
     """ Flow with window size 2. No resending packets """
 
     def __init__(self, source_id, dest_id, bytes, flowId):
@@ -167,7 +165,6 @@ class SuperSimpleFlow2(Flow):
 
 
 class TCPRenoFlow(Flow):
-
     """ TCP Reno """
 
     def __init__(self, source_id, dest_id, bytes, flowId):
@@ -186,7 +183,7 @@ class TCPRenoFlow(Flow):
         # Flow status
         self.lastAck = 0
         self.numLastAck = 1
-        self.nextSend = 0       # Packet number of next packet to send
+        self.nextSend = 0  # Packet number of next packet to send
         self.finalPacket = self.bytes / 1024
 
         # TCP Reno specific (FRT/FR)
@@ -198,15 +195,15 @@ class TCPRenoFlow(Flow):
         self.frnextSend = 0
 
         # RTT calculator
-        self.srtt = 3000       # Default RTT is 3s
+        self.srtt = 3000  # Default RTT is 3s
         self.alpha = 0.9
         self.inflight = {}
         self.lastRepSent = 0
 
         # Timeout
-        self.rto = 60000        # Default 60s
-        self.ubound = 60000     # Upper bound 60s
-        self.lbound = 1000      # Lower bound 1s
+        self.rto = 60000  # Default 60s
+        self.ubound = 60000  # Upper bound 60s
+        self.lbound = 1000  # Lower bound 1s
         self.beta = 1.5
         self.active = True
         self.nextTimeout = 0
@@ -314,7 +311,7 @@ class TCPRenoFlow(Flow):
 
         self.nextSend = max(self.nextSend, self.lastAck + self.cwnd)
 
-        if len(newpackets)> 0:
+        if len(newpackets) > 0:
             self.active = True
 
         return newpackets
@@ -346,18 +343,14 @@ class TCPRenoFlow(Flow):
         # Timed out, crash to window size 1.
         self.rto = min(self.ubound, max(self.lbound, self.beta * self.srtt))
         if not self.active:
-            # self.rto *= 2
-
             self._timeout(timestamp)
-        else:
-            self.rto = min(self.ubound, max(self.lbound, self.beta * self.srtt))
 
         self.active = False
 
         return self.sendPackets(timestamp), self.rto
 
-class FastTCPFlow(TCPRenoFlow):
 
+class FastTCPFlow(TCPRenoFlow):
     """ Fast TCP """
 
     def __init__(self, source_id, dest_id, bytes, flowId):
@@ -475,19 +468,17 @@ class FastTCPFlow(TCPRenoFlow):
             a = min(3.0 / self.cwnd, .25)
             self.srtt = self.srtt * (1 - a) + (a) * rtt
 
-
         self.brtt = min(self.brtt, self.srtt)
 
 
 class FlowRecipient(object):
-
     """ Class for the Flow recipient to manage the Flow. """
 
     def __init__(self, flowId, stats):
         self.flowId = flowId
 
-        self.received = set()   # List of received packet indices
-        self.lastAck = 0        # Last ack index sent (expected next packet index)
+        self.received = set()  # List of received packet indices
+        self.lastAck = 0  # Last ack index sent (expected next packet index)
         self.stats = stats
 
     def receiveDataPacket(self, packet, timestamp):
@@ -504,7 +495,5 @@ class FlowRecipient(object):
             self.received.remove(self.lastAck)
             self.lastAck += 1
 
-        self.stats.addBytesReceived(timestamp, packet.size)
         return AckPacket(packet.dest, packet.source,
                          self.lastAck, packet.flowId, packet.timestamp)
-

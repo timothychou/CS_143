@@ -5,8 +5,6 @@ icfire.router
 This module represents the routers
 """
 
-import sys
-
 from icfire.event import PacketEvent, UpdateRoutingTableEvent
 from icfire.networkobjects.networkobject import Node
 from icfire.packet import RoutingPacket, RoutingRequestPacket, DataPacket, AckPacket
@@ -14,7 +12,6 @@ from icfire import logger
 
 
 class Router(Node):
-
     """ Represents router in a network
 
     This class represents a router in a network that is able to
@@ -80,7 +77,7 @@ class Router(Node):
 
             # reset all and recalculate
             for dest in self.routing_table:
-                self.routing_table[dest] = (None, sys.maxint)
+                self.routing_table[dest] = (None, 999999)
                 for link in self.link_table:
                     if dest in self.link_table[link] and self.link_table[link][dest] < self.routing_table[dest][1]:
                         self.routing_table[dest] = (link, self.link_table[link][dest])
