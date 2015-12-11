@@ -34,9 +34,19 @@ class NetworkObject(object):
             raise AssertionError('process event should only be given an event')
 
     def _processPacketEvent(self, packet_event):
+        """ Process a PacketEvent
+
+        :param packet_event: PacketEvent to process
+        :return: new Events to enqueue
+        """
         raise NotImplementedError('This should be overriden by subclass')
 
     def _processOtherEvent(self, event):
+        """ Process other types of Events
+
+        :param packet_event: Event to process
+        :return: new Events to enqueue
+        """
         raise NotImplementedError('This should be overriden by subclass')
 
 
@@ -58,10 +68,24 @@ class Node(NetworkObject):
             self.links = links
 
     def addLink(self, target):
+        """ Add a link
+
+        :param target: link to add
+        """
         self.links.append(target)
 
     def _processPacketEvent(self, packet_event):
+        """ Process a PacketEvent
+
+        :param packet_event: PacketEvent to process
+        :return: new Events to enqueue
+        """
         raise NotImplementedError('This should be overriden by subclass')
 
     def _processOtherEvent(self, event):
+        """ Process other types of Events
+
+        :param packet_event: Event to process
+        :return: new Events to enqueue
+        """
         raise NotImplementedError('This should be overriden by subclass')

@@ -45,7 +45,6 @@ class Flow(object):
 
     def receiveAckPacket(self, packet, timestamp):
         """ Alter the flow state based on the ACK packet received.
-        TODO: (tangerinecat) edit docstring for this
         Returns a list of new packets to send
 
         :param packet: The ACK packet received
@@ -71,7 +70,9 @@ class Flow(object):
 
 
 class SuperSimpleFlow(Flow):
-    """ The most basic type of Flow with window size 1."""
+    """ The most basic type of Flow with window size 1.
+
+    For debugging purposes only. """
 
     def __init__(self, source_id, dest_id, bytes, flowId):
         """ Create a new Flow
@@ -114,7 +115,9 @@ class SuperSimpleFlow(Flow):
 
 
 class SuperSimpleFlow2(Flow):
-    """ Flow with window size 2. No resending packets """
+    """ Flow with window size N. No resending packets.
+
+    For debugging purposes only. """
 
     def __init__(self, source_id, dest_id, bytes, flowId):
         """ Create a new Flow
@@ -181,33 +184,33 @@ class TCPRenoFlow(Flow):
             source_id, dest_id, bytes, flowId)
 
         # Flow status
-        self.lastAck = 0
-        self.numLastAck = 1
+        self.lastAck = 0  # last received ACK
+        self.numLastAck = 1  # number of times last ACK was received
         self.nextSend = 0  # Packet number of next packet to send
-        self.finalPacket = self.bytes / 1024
+        self.finalPacket = self.bytes / 1024  # last packet to send
 
         # TCP Reno specific (FRT/FR)
-        self.ssthresh = 1000
-        self.cwnd = 1
-        self.canum = 0
-        self.fastrecovery = False
-        self.maxwnd = -1
-        self.frnextSend = 0
+        self.ssthresh = 1000  # slow start threshold
+        self.cwnd = 1  # current window
+        self.canum = 0  # congestion avoidance num, counts number of +1/cwnd
+        self.fastrecovery = False  # if in fast recovery mode
+        self.maxwnd = -1  # max window size before timeout (FR mode)
+        self.expectedack = 0  # expected ACK once exiting FR mode
 
         # RTT calculator
-        self.srtt = 3000  # Default RTT is 3s
-        self.alpha = 0.9
-        self.inflight = {}
-        self.lastRepSent = 0
+        self.srtt = 3000  # smoothed RTT, default RTT is 3s
+        self.alpha = 0.9  # alpha for adjusting RTT
+        self.inflight = {}  # dict of packet index -> (time sent, if repeated)
+        self.lastRepSent = 0  # last repeated ACK sent, ignore prev for RTT
 
         # Timeout
-        self.rto = 60000  # Default 60s
+        self.rto = 60000  # timeout time, default 60s
         self.ubound = 60000  # Upper bound 60s
         self.lbound = 1000  # Lower bound 1s
-        self.beta = 1.5
-        self.active = True
-        self.nextTimeout = 0
-        self.ignoreuntil = 0
+        self.beta = 1.5  # beta for adjusting timeout
+        self.active = True  # if packets sent/received, then Flow is active
+        self.nextTimeout = 0  # next allowed timeout time (every 2 RTT)
+        self.ignoreuntil = 0  # ignore duplicate ACKS for a while after timeout
 
     def receiveAckPacket(self, packet, timestamp):
         """ A new ACK number means that the next packet can be sent.
@@ -234,27 +237,34 @@ class TCPRenoFlow(Flow):
                 self.canum = 0
 
                 self.fastrecovery = True
-                self.frnextSend = self.nextSend
+                self.expectedack = self.nextSend
                 self.maxwnd = self.cwnd * 2
                 self.lastRepSent = max(self.lastRepSent, self.nextSend)
+
+            # Exceeded maximum allowed window size (resent packet was dropped)
             elif self.fastrecovery and self.numLastAck > self.maxwnd:
                 # Timed out.
                 self._timeout(timestamp)
+
+            # FR mode
             elif self.numLastAck > 4:
                 self.cwnd += 1
                 self.canum = 0
 
         # New ACK
         elif packet.index > self.lastAck:
+            # Calculate RTT if this packet is determinable (not repeated)
             if packet.index - 1 > self.lastRepSent and \
                     not self.inflight[packet.index - 1][1]:
                 rtt = timestamp - self.inflight[packet.index - 1][0]
                 self.stats.addRTT(timestamp, rtt)
                 self.srtt = self.alpha * self.srtt + (1 - self.alpha) * rtt
 
+            # Remove previous inflight packets
             for i in range(self.lastAck, packet.index):
                 self.inflight.pop(i)
 
+            # Update parameters
             self.lastAck = packet.index
             self.nextSend = max(self.nextSend, self.lastAck)
             self.numLastAck = 1
@@ -265,7 +275,8 @@ class TCPRenoFlow(Flow):
 
             # Exit fast recovery
             if self.fastrecovery:
-                if packet.index >= self.frnextSend:
+                # Check whether expected ACK out of FR. If not, timeout.
+                if packet.index >= self.expectedack:
                     self.cwnd = self.ssthresh
                     self.canum = 0
                     self.fastrecovery = False
@@ -284,7 +295,10 @@ class TCPRenoFlow(Flow):
                 if self.canum == self.cwnd:
                     self.cwnd += 1
                     self.canum = 0
+
+        # Log stats
         if not self.done:
+            # Log ssthresh as real window size during FR mode
             if self.fastrecovery:
                 self.stats.updateCurrentWindowSize(timestamp, self.ssthresh)
             else:
@@ -322,15 +336,14 @@ class TCPRenoFlow(Flow):
         :param timestamp: time that this occurs
         """
         if not self.done and timestamp > self.nextTimeout:
+            logger.log('TIMED OUT!')
+
             self.cwnd = 1
             self.canum = 0
             self.fastrecovery = False
 
             self.lastRepSent = max(self.lastRepSent, self.nextSend)
-
             self.nextSend = self.lastAck
-
-            logger.log('TIMED OUT!')
             self.nextTimeout = timestamp + 2 * self.srtt
 
     def checkTimeout(self, timestamp):
@@ -341,10 +354,10 @@ class TCPRenoFlow(Flow):
         """
 
         # Timed out, crash to window size 1.
-        self.rto = min(self.ubound, max(self.lbound, self.beta * self.srtt))
         if not self.active:
             self._timeout(timestamp)
 
+        self.rto = min(self.ubound, max(self.lbound, self.beta * self.srtt))
         self.active = False
 
         return self.sendPackets(timestamp), self.rto
@@ -475,6 +488,11 @@ class FlowRecipient(object):
     """ Class for the Flow recipient to manage the Flow. """
 
     def __init__(self, flowId, stats):
+        """ Constructor
+
+        :param flowId: flow's ID
+        :param stats: FlowStats to use
+        """
         self.flowId = flowId
 
         self.received = set()  # List of received packet indices

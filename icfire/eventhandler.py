@@ -32,7 +32,6 @@ import icfire.simtimer as simtimer
 
 
 class EventHandler(object):
-
     """ The eventhandler class handles events and timers
 
     It is reponsible for actually running the simulation
@@ -57,7 +56,7 @@ class EventHandler(object):
         else:
             print "No events queued"
 
-    def step(self, realtime=False, slowdown=1.):
+    def step(self):
         """ Processes one Event from the queue, corresponding to one 'tick'.
 
         If the queue is empty, this will raise an Empty error.
@@ -70,18 +69,11 @@ class EventHandler(object):
         event = self._queue.get(block=False)
         simtimer.simtime = event.timestamp
 
-        # TODO disabled for now
-        # if realtime:
-        #     waittime = event.timestamp - self.time
-        #     if waittime < 0:
-        #         logger.Log("Error: events are not occuring in order")
-        # wait for a maximum of 5 seconds
-        #     time.sleep((waittime / 1000 / slowdown) % 5)
-
         # Log each event
         logger.log('[%10.3f][%15s] %s' %
                    (event.timestamp, event.__class__, event.logMessage))
 
+        # enqueue new events
         newevents = event.eventObject.processEvent(event)
         for e in newevents:
             self._queue.put(e)

@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 
 
 class Network(object):
-    """This class contains all information encapsulating a computer network.
+    """ This class contains all information encapsulating a computer network.
 
     The network is kept track of as a dictionary of objects, as well as within
     a NetworkX graph.
@@ -118,38 +118,6 @@ class Network(object):
             return None
 
     def addFlow(self, source_id, dest_id, bytes, timestamp, flowType, flowId):
-        """ This function adds a flow to the network description
-
-        This also creates the flow if the flow has not been created already
-
-        :param source_id: source host id
-        :param dest_id: dest host id
-        :param bytes: number of bytes to send
-        :param timestamp: time that Flow sends first packet
-        :param flowType: name of Flow class to be used
-        """
-        # Check if the network has a flow list yet
-        if not isinstance(self.G.graph.get('flows'), dict):
-            self.G.graph['flows'] = dict()
-        if source_id in self.nodes:
-            if dest_id not in self.nodes:
-                print("dest_id not found")
-                return
-            else:
-                newFlowId = self._createFlow(source_id, dest_id, bytes,
-                                             timestamp, flowType, flowId)
-                eventjson = {
-                    'source_id': source_id,
-                    'dest_id': dest_id,
-                    'bytes': bytes,
-                    'timestamp': timestamp,
-                    'flowType': flowType,
-                }
-                self.G.graph['flows'][newFlowId] = eventjson
-        else:
-            print("host_id not found")
-
-    def _createFlow(self, source_id, dest_id, bytes, timestamp, flowType, flowId):
         """ Adds a new Flow from source_id to dest_id
 
         Uses reflection on flowType to create the appropriate Flow object
@@ -186,6 +154,10 @@ class Network(object):
         return flowId
 
     def load(self, filename):
+        """ Load data from json file
+
+        :param filename: file to load from
+        """
         with open(filename, 'r') as f:
             data = json.load(f)
             f.close()
@@ -220,6 +192,8 @@ class Network(object):
             self.addFlow(source_id, dest_id, bytes, timestamp, flowType, name)
 
     def draw(self):
+        """ Display a representation of the network
+        """
         colors = [self.G.node[n]['host'] for n in self.G.nodes()]
         pos = nx.spring_layout(self.G)
         nx.draw(self.G, pos=pos, node_color=colors)

@@ -32,17 +32,20 @@ class Router(Node):
         # dict with destination address as key
         # values are 2-tuples (link object, distance)
         self.routing_table = dict()
-        # dict with link as key, dict with key=dest, val=dist
+        # dict with link -> dict with key=dest, val=dist
         self.link_table = dict()
         # The routing table should either have a default starting state, or
         # _UpdateRoutingTable should be called once. Otherwise, the Router
         # will not be able to forward anything at all.
 
     def _processPacketEvent(self, event):
-        """Processes packet event.
+        """ Process a PacketEvent
 
         Timestamp is not changed because there is no
         delay through the router.
+
+        :param packet_event: PacketEvent to process
+        :return: new Events to enqueue
         """
 
         # Data packet, forward to correct link
@@ -66,7 +69,7 @@ class Router(Node):
             # overwrite previous
             self.link_table[link] = dict()
             for dest in neighborTable:
-                # split horizon
+                # split horizon to avoid cycles
                 if neighborTable[dest][0] != link:
                     self.link_table[link][dest] = neighborTable[dest][1] + cost
 
@@ -98,7 +101,13 @@ class Router(Node):
         return []
 
     def _processOtherEvent(self, event):
-        """ Processes non-packet events """
+        """ Process other types of Events.
+
+        Routers can handle UpdateRoutingTableEvents too
+
+        :param packet_event: Event to process
+        :return: new Events to enqueue
+        """
 
         if isinstance(event, UpdateRoutingTableEvent):
             return self._updateRoutingTable(event)
@@ -111,6 +120,9 @@ class Router(Node):
 
         This method should be the result of an Event that informs
         the Router to update. Begins bellman ford on all nodes in the graph
+
+        :param packet_event: UpdateRoutingTableEvent
+        :return: new Events to enqueue
         """
         packetevents = \
             [PacketEvent(event.timestamp + i * 10, self, self.links[i],
@@ -126,7 +138,11 @@ class Router(Node):
         return packetevents
 
     def getRoute(self, destination):
-        """checks routing table for route to destination"""
+        """ Check routing table to see how to get to destination
+
+        :param destination: Host to send to
+        :return: Link to forward to
+        """
 
         if destination in self.routing_table:
             return self.routing_table[destination][0]

@@ -51,9 +51,15 @@ class Host(Node):
         self.flowrecipients[flowrecipient.flowId] = flowrecipient
 
     def _processPacketEvent(self, event):
-        """Processes packet events
+        """ Processes packet events
 
-        sends back an ack as needed"""
+        Puts response packets (ACK, routing table updates) in link
+
+        Returns new Events to enqueue (e.g. LinkTickEvent)
+
+        :param event: PacketEvent to process
+        :return: new Events to enqueue
+        """
         packet = event.packet
         timestamp = event.timestamp
         newPackets = []
@@ -85,8 +91,6 @@ class Host(Node):
             assert packet.dest == self.address
             assert packet.flowId in self.flowrecipients
 
-            # TODO(choutim) include packet integrity checks, maybe
-
             newPacket = self.flowrecipients[
                 packet.flowId].receiveDataPacket(packet, event.timestamp)
             logger.log('ACK %s for flow %s from host %s to link %s' %
@@ -113,9 +117,14 @@ class Host(Node):
             raise NotImplementedError(
                 'Handling of %s not implemented' % event.__class__)
 
-    def _processUpdateFlowEvent(self, update_flow_event):
-        f = self.flows[update_flow_event.flowId]
-        t = update_flow_event.timestamp
+    def _processUpdateFlowEvent(self, updateflowevent):
+        """ Check up on the Flow, e.g. for timeouts
+
+        :param updateflowevent: UpdateFlowEvent to process
+        :return: new Events to enqueue
+        """
+        f = self.flows[updateflowevent.flowId]
+        t = updateflowevent.timestamp
 
         # Send packets
         newpackets, rto = f.checkTimeout(t)

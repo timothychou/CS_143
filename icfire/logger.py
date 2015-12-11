@@ -1,3 +1,10 @@
+"""
+icfire.logger
+~~~~~~~~~~~
+
+Literally just log stuff
+
+"""
 
 logfile = open('out4all.txt', 'w')
 

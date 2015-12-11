@@ -4,14 +4,13 @@
 icfire.events
 ~~~~~~~~~~~~~
 
-This module contains the event base class and all events that belong in the
-eventhandler. Events are used to time actions such delays
+This module contains the event base class and all events that work with the
+eventhandler. Events are used to time actions with delays
 
 """
 
 
 class Event(object):
-
     def __init__(self, timestamp, eventObject, logMessage=None):
         """ Constructor for an Event.
 
@@ -27,8 +26,7 @@ class Event(object):
             self.logMessage = 'An %s event took place at %d on object %s' % (
                 self.__class__, timestamp, eventObject)
 
-        # Keep track of order that Events are created to break ties for
-        # timestamps
+        # Keep track of order that Events are created to break ties
         self._internalid = getUniqueEventId()
 
     def __cmp__(self, other):
@@ -37,12 +35,11 @@ class Event(object):
         e1 > e2 = True if e1 has a timestamp greater than e2
         """
         if self.timestamp == other.timestamp:
-            return self._internalid > other._internalid     # Use _id to break ties.
+            return self._internalid > other._internalid  # Use _id to break ties.
         return self.timestamp > other.timestamp
 
 
 class PacketEvent(Event):
-
     """ Event related to a Packet being received. """
 
     def __init__(self, timestamp, sender, receiver, packet, logMessage=None):
@@ -62,7 +59,6 @@ class PacketEvent(Event):
 
 
 class UpdateFlowEvent(Event):
-
     """ Event that tells the Host to check on the Flow status (e.g. timeout).
     """
 
@@ -78,8 +74,8 @@ class UpdateFlowEvent(Event):
         super(self.__class__, self).__init__(timestamp, host, logMessage)
         self.flowId = flowId
 
-class UpdateWindowEvent(Event):
 
+class UpdateWindowEvent(Event):
     """ Event that tells flow to update window size for fast-tcp
     """
 
@@ -92,8 +88,8 @@ class UpdateWindowEvent(Event):
         """
         super(self.__class__, self).__init__(timestamp, flow, logMessage)
 
-class UpdateRoutingTableEvent(Event):
 
+class UpdateRoutingTableEvent(Event):
     """ Event that tells router to update routing table """
 
     def __init__(self, timestamp, router, logMessage=None):
@@ -107,7 +103,6 @@ class UpdateRoutingTableEvent(Event):
 
 
 class LinkTickEvent(Event):
-
     """ Event that tells the Link to send another Packet from its buffer. """
 
     def __init__(self, timestamp, link, logMessage=None):

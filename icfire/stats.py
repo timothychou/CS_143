@@ -5,10 +5,11 @@ Stats encapsulate the statistics and data of each node
 
 """
 
+import time as realtimer
+
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import ndimage
-import time as realtimer
 
 
 class Stats(object):
@@ -24,7 +25,7 @@ class Stats(object):
             'Handling of analysis not implemented')
 
 
-DELAY = .5
+DELAY = .5  # delay time for real time plotting
 
 
 class HostStats(Stats):
@@ -419,6 +420,7 @@ class LinkStats(Stats):
             self.fig.subplots_adjust(hspace=.5)
 
     def addLostPackets(self, timestamp, nlost):
+        """ Record packets that were dropped """
         if timestamp in self.lostpackets:
             self.lostpackets[timestamp] += nlost
         else:
@@ -442,6 +444,7 @@ class LinkStats(Stats):
                         self.fig.canvas.draw()
 
     def addBytesFlowed(self, timestamp, bytes):
+        """ Record bytes transmitted """
         if timestamp in self.bytesflowed:
             self.bytesflowed[timestamp] += bytes
         else:
@@ -474,6 +477,7 @@ class LinkStats(Stats):
                     self.fig.canvas.draw()
 
     def updateBufferOccupancy(self, timestamp, buffersize):
+        """ Record buffer occupancy """
         self.bufferoccupancy[timestamp] = buffersize
 
         if self.realTimePlot:
@@ -494,6 +498,7 @@ class LinkStats(Stats):
                         self.fig.canvas.draw()
 
     def analyze(self, interval=40, sameFigure=True, step=False):
+        """ Analyze and display plots """
         plt.figure()
         if sameFigure:
             plt.subplot(4, 1, 1)
